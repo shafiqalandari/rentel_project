@@ -1,0 +1,1 @@
+Market Rental UI update: local appearance modes dark/light/ocean, header notifications calculated from stored dashboard balance and contract end dates, enhanced Settings. Backup data before replacement. No database changes. Notifications require refreshed local data.

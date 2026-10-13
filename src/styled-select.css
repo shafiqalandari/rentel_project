@@ -1,0 +1,11 @@
+/* Shared custom select for every language and form */
+.styled-select{position:relative;min-width:0;max-width:100%;font:inherit;flex-shrink:0}
+.styled-select-trigger{display:flex;width:100%;min-height:41px;align-items:center;justify-content:space-between;gap:14px;text-align:start;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:11px;padding:9px 13px;transition:border-color .12s,box-shadow .12s;font:inherit}
+.styled-select-trigger:hover{border-color:#5d83bd}.styled-select-trigger:focus-visible,.styled-select-trigger.is-open{outline:0;border-color:#5c96fc;box-shadow:0 0 0 3px #3b82f633}
+.styled-select-current{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}.styled-select-trigger svg{flex:none;opacity:.75;transition:transform .15s}.styled-select-trigger.is-open svg{transform:rotate(180deg)}
+.styled-select-menu{position:absolute;z-index:120;inset-inline-start:0;top:calc(100% + 6px);min-width:100%;width:max-content;max-width:min(350px,90vw);max-height:260px;overflow-y:auto;background:var(--surface);border:1px solid var(--border);box-shadow:0 15px 38px #0005;border-radius:12px;padding:5px;scrollbar-width:thin;animation:selectReveal .12s ease-out}
+.styled-select-option{border:0;width:100%;padding:10px 13px;border-radius:8px;background:transparent;color:var(--text);text-align:start;display:flex;align-items:center;justify-content:space-between;gap:18px;white-space:nowrap;line-height:1.5}
+.styled-select-option:hover,.styled-select-option.is-active{background:#3b82f61c}.styled-select-option.is-selected{color:#60a5fa;background:#3b82f614;font-weight:700}.styled-select-option:disabled{opacity:.5}.styled-select-check{font-size:14px}.styled-select-validation{position:absolute;opacity:0;pointer-events:none;height:1px;width:1px;padding:0;border:0;bottom:0;inset-inline-start:0}
+header .styled-select{min-width:95px;max-width:140px}.login .styled-select{align-self:center;min-width:112px}.formgrid label .styled-select{width:100%}
+@keyframes selectReveal{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}@media(prefers-reduced-motion:reduce){.styled-select-menu{animation:none}}
+@media(max-width:640px){header .styled-select{min-width:90px}.styled-select-trigger{padding:7px 9px;min-height:36px}}
