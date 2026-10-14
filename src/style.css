@@ -716,3 +716,47 @@ html:is([lang="fa"],[lang="fa-AF"],[lang="ps"]) .module-card-head {
 .report-v3 .report-v3-totals strong{display:block;text-align:start;unicode-bidi:isolate}
 @media(max-width:680px){.rental-report-hub.report-v3{gap:12px}.report-v3 .report-v3-hero{align-items:stretch}.report-v3 .report-v3-window{width:100%}.report-v3 .report-v3-alert-cards,.report-v3 .report-v3-totals{grid-template-columns:repeat(2,minmax(0,1fr))}.report-v3 .report-v3-panel-header{align-items:flex-start}.report-v3 .report-v3-alert-card strong{font-size:24px}}
 @media(max-width:360px){.report-v3 .report-v3-alert-cards{grid-template-columns:1fr 1fr}.report-v3 .report-v3-alert-card{padding:10px}}
+
+
+/* Reports light theme, scoped to the reports hub, not global dashboard */
+html:not(.dark) .app .report-v3,
+html:not(.dark) .app .report-v3 {color:var(--text,#17263d)}
+html:not(.dark) .app .report-v3 .report-v3-hero,
+html:not(.dark) .app .report-v3 .report-v3-panel,
+html:not(.dark) .app .report-v3 .report-v3-alert-card,
+html:not(.dark) .app .report-v3 .report-v3-totals>div{
+  background:#ffffff!important;color:#18283f!important;border:1px solid #d8e2ef!important;
+  box-shadow:0 5px 20px rgba(26,52,89,.055);
+}
+html:not(.dark) .app .report-v3 .report-v3-alert-card:hover,
+html:not(.dark) .app .report-v3 .report-v3-alert-card.selected{
+  background:#eff5ff!important;border-color:#77a7ef!important;
+}
+html:not(.dark) .app .report-v3 .report-v3-hero p,
+html:not(.dark) .app .report-v3 .report-v3-panel-header p,
+html:not(.dark) .app .report-v3 .report-v3-alert-card small,
+html:not(.dark) .app .report-v3 .report-v3-card-link,
+html:not(.dark) .app .report-v3 .report-v3-empty small,
+html:not(.dark) .app .report-v3 .report-v3-totals span{color:#56677e!important;opacity:1}
+html:not(.dark) .app .report-v3 .report-v3-alert-card strong,
+html:not(.dark) .app .report-v3 .report-v3-panel h3,
+html:not(.dark) .app .report-v3 .report-v3-totals strong{color:#122641!important}
+html:not(.dark) .app .report-v3 .report-v3-empty{background:#f5f8fd;color:#294361;border:1px dashed #cbd8e9;border-radius:12px}
+html:not(.dark) .app .report-v3 .report-v3-panel button,
+html:not(.dark) .app .report-v3 .report-v3-hero select,
+html:not(.dark) .app .report-v3 .report-v3-filters input,
+html:not(.dark) .app .report-v3 .report-v3-filters select,
+html:not(.dark) .app .report-v3 .report-v3-filters button {
+  background:#f8fafd!important;color:#1b304e!important;border:1px solid #ccd8e8!important;
+}
+html:not(.dark) .app .report-v3 .report-v3-panel button:hover{background:#edf4ff!important;border-color:#82aff1!important}
+html:not(.dark) .app .report-v3 .report-v3-filters label{color:#364c69!important}
+html:not(.dark) .app .report-v3 .report-v3-table-wrap{background:#fff;border-color:#dae4ef}
+html:not(.dark) .app .report-v3 .report-v3-table-wrap th{background:#edf3fb!important;color:#284365!important}
+html:not(.dark) .app .report-v3 .report-v3-table-wrap td{color:#1b304d!important;border-color:#e3ebf4}
+html:not(.dark) .app .report-v3 .report-v3-table-wrap tbody tr:hover{background:#f3f7fd!important}
+html:not(.dark) .app .report-v3 .report-v3-type.receipt{color:#087c56!important}
+html:not(.dark) .app .report-v3 .report-v3-type.expense{color:#b42342!important}
+html:not(.dark) .app .report-v3 .report-v3-type.withdrawal{color:#956000!important}
+.report-v3 .report-v3-alert-card,.report-v3 .report-v3-panel,.report-v3 .report-v3-hero{min-width:0}
+@media(max-width:640px){.report-v3 .report-v3-panel-header{gap:12px}.report-v3 .report-v3-filters>label{min-width:0}}

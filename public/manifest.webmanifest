@@ -1,0 +1,12 @@
+{
+  "name": "Market Rental Management",
+  "short_name": "Market Rental",
+  "description": "Local market rent and partners management",
+  "id": "/",
+  "start_url": "/#/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0c1018",
+  "theme_color": "#111827",
+  "icons": [{"src":"/market-icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}
