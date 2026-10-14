@@ -134,6 +134,13 @@ if(path==='backup/clear'){requireAdmin(db);if(method!=='POST'||body.confirm!=='D
   const monthPaid=active(db,'employeeTransactions').filter((x:Row)=>String(x.employee_id)===String(employee.id)&&x.period===body.period&&x.kind==='payment').reduce((n:number,x:Row)=>n+num(x.amount),0);
   if(num(body.amount)>Math.max(0,num(employee.salary)-monthFine-monthPaid)+0.001)err('Payment exceeds outstanding salary for the month');
  }
+ if(body.kind==='fine'){
+  const existing=active(db,'employeeTransactions').filter((x:Row)=>String(x.employee_id)===String(employee.id)&&x.period===body.period);
+  const alreadyFined=existing.filter((x:Row)=>x.kind==='fine').reduce((n:number,x:Row)=>n+num(x.amount),0);
+  const alreadyPaid=existing.filter((x:Row)=>x.kind==='payment').reduce((n:number,x:Row)=>n+num(x.amount),0);
+  if(num(body.amount)>Math.max(0,num(employee.salary)-alreadyFined-alreadyPaid)+0.001)err('Fine exceeds remaining salary for this month');
+ }
+ if(body.entry_date && !/^\d{4}-\d{2}-\d{2}$/.test(String(body.entry_date)))err('Invalid transaction date');
  const row={id:ensureId(db),employee_id:employee.id,kind:body.kind,amount:num(body.amount),period:body.period,entry_date:body.entry_date||date(),account_id:body.kind==='payment'?body.account_id:null,notes:String(body.notes||''),created_at:iso()};
  db.employeeTransactions.push(row);audit(db,'create','employeeTransactions',row.id);persist(db);return row;
 }
