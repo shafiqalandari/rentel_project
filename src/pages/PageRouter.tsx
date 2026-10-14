@@ -11,6 +11,8 @@ import AccountsPage from './AccountsPage';
 import DistributionsPage from './DistributionsPage';
 import ReportsPage from './ReportsPage';
 import SettingsPage from './SettingsPage';
+import EmployeesPage from './EmployeesPage';
+import RecycleBinPage from './RecycleBinPage';
 import {usePage} from './PageContext';
 function PageContent(){const {page}=usePage();
  switch(page){
@@ -24,8 +26,10 @@ function PageContent(){const {page}=usePage();
  case 'distributions':return <DistributionsPage/>;
  case 'reports':return <ReportsPage/>;
  case 'settings':return <SettingsPage/>;
+ case 'employees':return <EmployeesPage/>;
+ case 'recycleBin':return <RecycleBinPage/>;
  default:return null;
  }
 }
 
-export default function PageRouter(){return <><Guidance/><ModuleStats/><PageContent/></>}
+export default function PageRouter(){const {page,printSection,lang,tenantProfileId}=usePage();if(page==='tenants'&&tenantProfileId!==null)return <TenantsPartnersPage/>;return <><Guidance/>{page!=='settings'&&<div className="market-global-print"><button type="button" onClick={()=>printSection(page)}>▤ {lang==='en'?'Print section':lang==='ps'?'برخه چاپ کړئ':'چاپ این بخش'}</button></div>}<ModuleStats/><PageContent/></>}

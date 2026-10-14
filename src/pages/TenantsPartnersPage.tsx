@@ -1,6 +1,33 @@
-import React from 'react';
+import React,{useState} from 'react';
 import {usePage} from './PageContext';
-export default function TenantsPartnersPage(){const {page,lang,data,dashboard,settings,user,search,from,to,selected,shopProfileId,canManage,canWrite,admin,t,fmt,readable,actions,table,openForm,setShopProfileId,setSelected,setFrom,setTo,setSettings,setError,setPage,setSearch,refresh,api,exportBackup,importBackup,csvExport}=usePage();
-if(page==='tenants'||page==='partners'){let fields=page==='tenants'?['name','phone','identity_no','address']:['name','phone','share','capital'];return <>{actions(page)}{table(data[page]||[],fields,{key:page,editable:true})}</>}
-return null;
+export default function TenantsPartnersPage(){
+ const {page,lang,data,settings,t,fmt,readable,actions,search}=usePage();
+ const {tenantProfileId,setTenantProfileId,openForm,deleteRecord,canManage,admin,printProfile}=usePage();
+ if(page!=='tenants'&&page!=='partners')return null;
+ if(page==='partners')return <>{actions(page)}{table(data.partners||[],['name','phone','share','capital'],{key:'partners',editable:true})}</>;
+ const words=lang==='en'?{title:'Tenant profile',back:'Back to tenants',details:'Personal information',contracts:'Rental contracts',ledger:'Tenant ledger',billed:'Total rent billed',received:'Payments received',due:'Outstanding balance',credit:'Prepaid credit',monthly:'Monthly rent charges',history:'Payment history',month:'Rent month',rent:'Rent',paid:'Paid',none:'No records',print:'Print profile',hint:'Rent, payments and outstanding balances for this tenant only.'}:lang==='ps'?{title:'د کرایه کوونکي پروفایل',back:'کرایه کوونکو ته ستنېدل',details:'شخصي معلومات',contracts:'د کرایې قراردادونه',ledger:'د کرایه کوونکي حساب',billed:'ټوله کرایه',received:'ترلاسه شوې پیسې',due:'پاتې کرایه',credit:'مخکې ورکړې پیسې',monthly:'میاشتنۍ کرایې',history:'د ورکړو تاریخچه',month:'د کرایې میاشت',rent:'کرایه',paid:'ورکړې',none:'ریکارډ نشته',print:'پروفایل چاپ کړئ',hint:'یوازې د همدې کرایه کوونکي حساب، قراردادونه او ورکړې.'}:{title:'پروفایل مستأجر',back:'برگشت به مستأجرین',details:'معلومات شخصی',contracts:'قراردادهای کرایه',ledger:'لیجر عمومی مستأجر',billed:'مجموع کرایه',received:'مجموع پرداخت‌ها',due:'بدهکاری',credit:'پیش‌پرداخت',monthly:'کرایه‌های ماهانه',history:'تاریخچه پرداخت‌ها',month:'ماه کرایه',rent:'کرایه',paid:'پرداخت‌شده',none:'ریکاردی موجود نیست',print:'چاپ پروفایل',hint:'معلومات، قراردادها و حساب مالی فقط همین مستأجر نمایش داده می‌شود.'};
+ const goToTenant=(id:number)=>{window.location.hash=`#/tenants/${id}`;setTenantProfileId(id)};
+ const goBack=()=>{window.location.hash='#/tenants';setTenantProfileId(null)};
+ const tenants=data.tenants||[];
+ const tenant=tenants.find(r=>Number(r.id)===tenantProfileId);
+ if(tenantProfileId!==null){
+  if(!tenant)return <section className="panel"><button onClick={goBack}>{words.back}</button><p>{words.none}</p></section>;
+  const id=String(tenant.id);
+  const statement=(data.tenantStatements||[]).find(x=>String(x.tenant_id)===id);
+  const contracts=(data.contracts||[]).filter(x=>String(x.tenant_id)===id);
+  const charges=(data.charges||[]).filter(x=>String(x.tenant_id)===id);
+  const receipts=(data.receipts||[]).filter(x=>String(x.tenant_id)===id&&!x.voided_at);
+  const allocations=(data.rentAllocations||[]).filter(x=>String(x.tenant_id)===id);
+  const details=['name','father_name','phone','emergency_phone','identity_no','address','occupation','notes'];
+  return <div className="tenant-profile-page">
+   <div className="tenant-profile-heading"><div><button className="mini" onClick={goBack}>← {words.back}</button><p className="tenant-profile-eyebrow">{words.title}</p><h2>{tenant.name}</h2><p className="hint">{words.hint}</p></div><div className="tenant-profile-toolbar">{canManage&&<button onClick={()=>openForm('tenants',tenant)}>{t('edit')}</button>}{admin&&<button className="danger" onClick={async()=>{await deleteRecord('tenants',Number(tenant.id));setTenantProfileId(null)}}>{t('delete')}</button>}<button onClick={()=>printProfile('tenants',tenant)}>{words.print}</button></div></div>
+   <div className="tenant-ledger-kpis">{[[words.billed,statement?.billed],[words.received,statement?.received],[words.due,statement?.due],[words.credit,statement?.credit]].map(([label,n])=><div className="tenant-ledger-kpi" key={String(label)}><span>{label}</span><strong>{fmt(n)} <small>{settings.currency||'AFN'}</small></strong></div>)}</div>
+   <section className="panel"><h3>{words.details}</h3><div className="tenant-detail-grid">{details.filter(k=>tenant[k]!==undefined&&tenant[k]!==null&&tenant[k]!=='').map(k=><div className="tenant-detail-field" key={k}><span>{t(k)}</span><strong>{readable(k,tenant[k])}</strong></div>)}</div></section>
+   <section className="panel"><h3>{words.contracts}</h3><div className="tablewrap"><table><thead><tr>{['shop_id','start_date','end_date','monthly_rent','deposit','status'].map(k=><th key={k}>{t(k)}</th>)}</tr></thead><tbody>{contracts.length?contracts.map(c=><tr key={c.id}>{['shop_id','start_date','end_date','monthly_rent','deposit','status'].map(k=><td key={k}>{k==='shop_id'?(data.shops||[]).find(sh=>String(sh.id)===String(c.shop_id))?.number||c.shop_id:readable(k,c[k])}</td>)}</tr>):<tr><td colSpan={6}>{words.none}</td></tr>}</tbody></table></div></section>
+   <section className="panel"><h3>{words.monthly}</h3><div className="tablewrap"><table><thead><tr>{[words.month,t('shop_id'),words.rent,words.paid,words.due].map(x=><th key={x}>{x}</th>)}</tr></thead><tbody>{charges.length?charges.map(c=><tr key={c.id}><td>{readable('period',c.period)}</td><td>{c.shop}</td><td>{fmt(c.amount)}</td><td>{fmt(c.paid)}</td><td>{fmt(c.due)}</td></tr>):<tr><td colSpan={5}>{words.none}</td></tr>}</tbody></table></div></section>
+   <section className="panel"><h3>{words.history}</h3><div className="tablewrap"><table><thead><tr>{[t('receipt'),t('receipt_date'),t('amount'),words.month,t('account_id')].map(x=><th key={x}>{x}</th>)}</tr></thead><tbody>{receipts.length?receipts.map(r=><tr key={r.id}><td>#{r.id}</td><td>{readable('receipt_date',r.receipt_date)}</td><td>{fmt(r.amount)}</td><td>{r.period?readable('period',r.period):allocations.filter(a=>String(a.receipt_id)===String(r.id)).map(a=>readable('period',a.period)).join('، ')||'—'}</td><td>{(data.accounts||[]).find(a=>String(a.id)===String(r.account_id))?.name||r.account||'—'}</td></tr>):<tr><td colSpan={5}>{words.none}</td></tr>}</tbody></table></div></section>
+  </div>;
+ }
+ const visible=tenants.filter(r=>!search||Object.values(r).join(' ').toLowerCase().includes(search.toLowerCase()));
+ return <>{actions('tenants')}<div className="tablewrap"><table><thead><tr>{['name','phone','identity_no','address'].map(k=><th key={k}>{t(k)}</th>)}<th>{t('actions')}</th></tr></thead><tbody>{visible.map(r=><tr key={r.id} className="record-row tenant-list-row" tabIndex={0} onClick={()=>goToTenant(Number(r.id))} onKeyDown={e=>{if(e.key==='Enter'){goToTenant(Number(r.id))}}}>{['name','phone','identity_no','address'].map(k=><td key={k}>{readable(k,r[k])||'—'}</td>)}<td className="nowrap" onClick={e=>e.stopPropagation()}><button className="mini" onClick={()=>goToTenant(Number(r.id))}>{t('details')}</button>{canManage&&<button className="mini" onClick={()=>openForm('tenants',r)}>{t('edit')}</button>}{admin&&<button className="mini danger" onClick={()=>deleteRecord('tenants',Number(r.id))}>{t('delete')}</button>}</td></tr>)}{visible.length===0&&<tr><td colSpan={5}>{words.none}</td></tr>}</tbody></table></div></>;
 }

@@ -2,8 +2,8 @@ import React,{createContext,useContext} from 'react';
 export type Rec=Record<string,any>;
 export type Lang='fa'|'ps'|'en';
 export interface PageServices {
- page:string; lang:Lang;theme:string;setTheme:(theme:string)=>void;setLang:(lang:Lang)=>void; data:Record<string,Rec[]>;dashboard:Rec;settings:Rec; user:Rec|null;
- search:string; from:string;to:string;selected:string;shopProfileId:number|null;
+ page:string; calendarMode:'jalali'|'gregorian'; lang:Lang;theme:string;setTheme:(theme:string)=>void;setLang:(lang:Lang)=>void; data:Record<string,Rec[]>;dashboard:Rec;settings:Rec; user:Rec|null;
+ search:string; from:string;to:string;selected:string;shopProfileId:number|null;tenantProfileId:number|null;setTenantProfileId:React.Dispatch<React.SetStateAction<number|null>>;
  canManage:boolean;canWrite:boolean;admin:boolean;
  t:(s:string)=>string; fmt:(x:any)=>string;readable:(k:string,v:any)=>string;
  actions:(k:string,label?:string)=>React.ReactNode;
@@ -23,6 +23,8 @@ export interface PageServices {
  exportBackup:()=>Promise<void>;
  importBackup:(f:File)=>Promise<void>;
  csvExport:(rows:Rec[],cols:string[])=>void;
+ printSection:(key?:string)=>void;
+ printProfile:(key:string,row:Rec)=>void;
 }
 const C=createContext<PageServices|null>(null);
 export const PageProvider=C.Provider;

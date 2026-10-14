@@ -13,6 +13,8 @@ const paths: Record<string, React.ReactNode> = {
  accounts: <><path d="m2 9 10-6 10 6M4 10h16M6 10v9M11 10v9M16 10v9M3 21h18"/></>,
  distributions: <><circle cx="12" cy="12" r="9"/><path d="M12 3v9h9M12 12l-6 7"/></>,
  reports: <><path d="M4 21V3M4 21h17M8 17v-5M13 17V8M18 17V5"/></>,
+ employees: <><circle cx="9" cy="7" r="3"/><path d="M3 21v-3a6 6 0 0 1 12 0v3M17 3h4M19 1v4M17 13h4M17 17h4"/></>,
+ recycleBin: <><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6"/></>,
  settings: <><circle cx="12" cy="12" r="3"/><path d="M10 2h4l.7 3 2 .9 2.6-1.4 2.5 3-1.8 2.3.2 2.4 2 2-2 3.5-2.8-1-2 1.1-.7 3.2h-4l-.7-3.2-2-1.1-2.8 1-2-3.5 2-2-.2-2.4L3.2 7.5l2.5-3 2.6 1.4 2-.9L10 2Z"/></>
 };
 export function SidebarIcon({name}:{name:string}) {

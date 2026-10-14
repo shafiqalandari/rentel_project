@@ -13,7 +13,12 @@ npm run dev
 Open the Vite URL (usually http://localhost:5173).
 
 ## Login
-This offline demonstration automatically loads a local administrator session. If you log out, enter any email and password to return to the local administrator account. **This is not secure authentication.** Do not use this local-only mode as a multi-user production financial system.
+The app never creates an automatic local session. On the first visit, and after logout, enter the administrator email and password to continue:
+
+- Email: `admin@gmail.com`
+- Password: `mynameisadmin`
+
+The session is kept only in the current browser tab and is removed on logout. **This is not secure authentication.** Do not use this local-only mode as a multi-user production financial system.
 
 ## Data safety
 All data is stored under `market_rental_offline_v1` in this browser profile's localStorage. Refreshing or closing the browser normally preserves it. Clearing site data, using private mode, or switching browsers/devices can remove access to stored records. Use Settings > Download Backup regularly. Restore using Settings > Restore Backup (replaces all locally stored market records).

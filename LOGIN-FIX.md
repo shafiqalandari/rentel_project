@@ -1,0 +1,1 @@
+Login fix v3: On upgrade, legacy local-session is rejected. New sessions are stored per browser tab in sessionStorage; refresh maintains login, logout clears it. This is a local demonstration, not secure server authentication. Local financial data keys remain unchanged.

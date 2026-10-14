@@ -6,7 +6,7 @@ const arr=(k:string)=>data[k]||[];const sum=(xs:any[],k:string)=>xs.filter(x=>!x
 const count=(k:string)=>arr(k).length;
 let cards:{title:string;value:string;icon:string;unit?:string}[]=[];
 const add=(title:string,value:number,icon:string,unit?:string)=>cards.push({title,value:unit?fmt(value):String(value),icon,unit});
-switch(page){case 'shops':add(t('shops'),count('shops'),'shops');add(t('vacant'),arr('shops').filter(x=>x.status==='vacant').length,'shops');add(t('occupied'),arr('shops').filter(x=>x.status==='occupied').length,'contracts');add(t('rent'),sum(arr('shops'),'rent'),'charges',currency);break;
+switch(page){case 'shops':add(t('shops'),count('shops'),'shops');add(t('vacant'),arr('shops').filter(x=>x.status==='vacant').length,'shops');add(t('occupied'),arr('shops').filter(x=>x.status==='occupied'||x.status==='reserved').length,'contracts');add(t('rent'),sum(arr('shops'),'rent'),'charges',currency);break;
 case 'tenants':add(t('tenants'),count('tenants'),'tenants');add(t('contracts'),count('contracts'),'contracts');add(t('debt'),sum(arr('charges'),'due'),'charges',currency);add(t('revenue'),dashboard.revenue||0,'charges',currency);break;
 case 'contracts':add(t('contracts'),count('contracts'),'contracts');add(t('shops'),new Set(arr('contracts').map(x=>x.shop_id)).size,'shops');add(t('rent'),sum(arr('contracts'),'monthly_rent'),'charges',currency);add(t('deposit'),sum(arr('contracts'),'deposit'),'accounts',currency);break;
 case 'charges':add(t('debt'),dashboard.debt||0,'charges',currency);add(t('revenue'),dashboard.revenue||0,'charges',currency);add(t('receipt'),count('receipts'),'contracts');add(t('tenants'),count('tenants'),'tenants');break;
