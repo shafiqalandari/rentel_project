@@ -1,7 +1,7 @@
 import React,{useState} from 'react';
 import {usePage} from './PageContext';
 export default function TenantsPartnersPage(){
- const {page,lang,data,settings,t,fmt,readable,actions,search}=usePage();
+ const {page,lang,data,settings,t,fmt,readable,actions,search,table}=usePage();
  const {tenantProfileId,setTenantProfileId,openForm,deleteRecord,canManage,admin,printProfile}=usePage();
  if(page!=='tenants'&&page!=='partners')return null;
  if(page==='partners')return <>{actions(page)}{table(data.partners||[],['name','phone','share','capital'],{key:'partners',editable:true})}</>;
