@@ -669,58 +669,32 @@ html:is([lang="fa"],[lang="fa-AF"],[lang="ps"]) :is(p,span,td,small,.hint,.muted
   html:is([lang="fa"],[lang="fa-AF"],[lang="ps"]) :is(nav button, .mobile-page-title, .sidebar-brand-name) {font-weight: 750;}
 }
 
-/* Login language selector: ensure dark styling even outside the .app theme scope. */
-.market-login .market-login-card-top .styled-select {
-  position: relative;
-  width: 146px;
-  min-width: 120px;
-  max-width: 146px;
-  flex: 0 0 auto;
-  background: transparent !important;
-  border: 0 !important;
+/* Unified metric value placement in RTL (Dari / Pashto), across modules */
+html[lang="fa"] .module-card,
+html[lang="ps"] .module-card,
+html[lang="fa-AF"] .module-card,
+html[lang="fa"] .metric,
+html[lang="ps"] .metric,
+html[lang="fa-AF"] .metric,
+html[lang="fa"] .dash-metric,
+html[lang="ps"] .dash-metric,
+html[lang="fa-AF"] .dash-metric {
+  direction: rtl;
+  text-align: right;
 }
-.market-login .market-login-card-top .styled-select-trigger {
-  appearance: none;
-  -webkit-appearance: none;
+html:is([lang="fa"],[lang="fa-AF"],[lang="ps"]) :is(.module-card,.metric,.dash-metric) :is(strong,.metric-value,.stat-value,.dash-metric-value) {
+  display: block;
   width: 100%;
-  min-height: 44px;
-  padding: 10px 13px;
-  background: #1b3049 !important;
-  color: #f1f7ff !important;
-  border: 1px solid #496788 !important;
-  border-radius: 12px;
-  font-weight: 750;
-  box-shadow: none !important;
+  text-align: right !important;
+  direction: ltr;
+  unicode-bidi: isolate;
+  font-variant-numeric: tabular-nums;
 }
-.market-login .market-login-card-top .styled-select-trigger:hover,
-.market-login .market-login-card-top .styled-select-trigger.is-open,
-.market-login .market-login-card-top .styled-select-trigger:focus-visible {
-  background: #213d5b !important;
-  border-color: #51a3fa !important;
-  box-shadow: 0 0 0 3px #2388ee2a !important;
+html:is([lang="fa"],[lang="fa-AF"],[lang="ps"]) :is(.module-card,.metric,.dash-metric) small {
+  text-align: right;
 }
-.market-login .market-login-card-top .styled-select-trigger svg {color: #b9d9f7 !important;}
-.market-login .market-login-card-top .styled-select-menu {
-  background: #15263c !important;
-  border: 1px solid #496788 !important;
-  color: #f1f7ff !important;
-  box-shadow: 0 15px 35px #0008;
-  min-width: 100%;
-  z-index: 500;
-}
-.market-login .market-login-card-top .styled-select-option {
-  background: transparent !important;
-  color: #e5f0ff !important;
-}
-.market-login .market-login-card-top .styled-select-option:hover,
-.market-login .market-login-card-top .styled-select-option.is-active,
-.market-login .market-login-card-top .styled-select-option.is-selected {
-  background: #284c72 !important;
-  color: #fff !important;
-}
-@media (max-width: 480px) {
-  .market-login-card-top {gap: 12px;align-items:center;}
-  .market-login-card-top .market-login-card-icon {flex:0 0 48px;}
-  .market-login .market-login-card-top .styled-select {width: 134px;max-width: 134px;min-width: 120px;}
-  .market-login .market-login-card-top .styled-select-trigger {min-height: 45px;font-size: 14px;}
+/* Keep the icon on its existing side without moving the metric value. */
+html:is([lang="fa"],[lang="fa-AF"],[lang="ps"]) .module-card-head {
+  direction: rtl;
+  text-align: right;
 }
