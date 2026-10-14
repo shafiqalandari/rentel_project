@@ -760,3 +760,30 @@ html:not(.dark) .app .report-v3 .report-v3-type.expense{color:#b42342!important}
 html:not(.dark) .app .report-v3 .report-v3-type.withdrawal{color:#956000!important}
 .report-v3 .report-v3-alert-card,.report-v3 .report-v3-panel,.report-v3 .report-v3-hero{min-width:0}
 @media(max-width:640px){.report-v3 .report-v3-panel-header{gap:12px}.report-v3 .report-v3-filters>label{min-width:0}}
+
+
+/* Light theme: unify contextual form summary panels across modules.
+   Existing inline notices use var(--panel,#171d29); without --panel,
+   the dark fallback made partner/share summaries unreadable in light mode. */
+.app { --panel: var(--surface); --panel-text: var(--text); }
+.dark .app { --panel: #171e2b; --panel-text: var(--text); }
+html:not(.dark) .app .dialog,
+html:not(.dark) .app .modal,
+html:not(.dark) .app .panel {
+  --panel: #f1f5fb;
+  --panel-text: #15243b;
+}
+html:not(.dark) .app .dialog [role="status"],
+html:not(.dark) .app .modal [role="status"] {
+  color: #172a45;
+  border-color: #d5dfed !important;
+}
+html:not(.dark) .app .dialog [role="status"] strong,
+html:not(.dark) .app .dialog [role="status"] small,
+html:not(.dark) .app .modal [role="status"] strong,
+html:not(.dark) .app .modal [role="status"] small {
+  color: #263b59;
+  opacity: 1;
+}
+html:not(.dark) .app .dialog .hint,
+html:not(.dark) .app .dialog .form-help { color: #58708c; }
