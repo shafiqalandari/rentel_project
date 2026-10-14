@@ -29,9 +29,9 @@ function rentLedger(db:DB, tenantId?:any){
  const todayMonth=date().slice(0,7);
  const dueRows:Row[]=[];
  for(const c of db.contracts){
-  if(c.status==='closed'||c.status==='cancelled')continue;
+  if(c.status==='cancelled'&&!c.termination_date)continue;
   if(tenantId!=null&&String(c.tenant_id)!==String(tenantId))continue;
-  const start=String(c.start_date||'').slice(0,7), finish=String(c.end_date||'').slice(0,7);
+  const start=String(c.start_date||'').slice(0,7), finish=String(c.termination_date||c.end_date||'').slice(0,7);
   if(!/^\d{4}-\d{2}$/.test(start)||!/^\d{4}-\d{2}$/.test(finish))continue;
   let [year,month]=start.split('-').map(Number);
   const limit=finish<todayMonth?finish:todayMonth;
@@ -75,7 +75,7 @@ function tenantStatements(db:DB){const ledger=rentLedger(db);return db.tenants.m
 })}
 /** The status is derived from contracts instead of trusting an old shop.status value. */
 function contractState(contract:Row, todayISO=date()):string{
-  if(contract.status==='closed'||contract.status==='cancelled')return 'closed';
+  if(contract.status==='closed'||contract.status==='cancelled'||contract.status==='terminated')return 'closed';
   if(String(contract.end_date||'')<todayISO)return 'closed';
   if(String(contract.start_date||'')>todayISO)return 'upcoming';
   return 'active';
@@ -88,7 +88,7 @@ function shopState(db:DB,shop:Row,todayISO=date()):string{
 }
 function enriched(db:DB,key:string):Row[]{if(key==='charges')return charges(db);return (db[key]||[]).map((r:Row)=>{let x={...r};if(key==='shops')x.status=shopState(db,r);if(key==='contracts')x.status=contractState(r);if(r.tenant_id)x.tenant=name(db,'tenants',r.tenant_id);if(r.partner_id)x.partner=name(db,'partners',r.partner_id);if(r.account_id)x.account=name(db,'accounts',r.account_id);if(key==='distributions' && !r.partner_id)return x;return x})}
 function dashboard(db:DB){const sum=(key:string)=>active(db,key).reduce((v:number,r:Row)=>v+num(r.amount),0);const bals=db.accounts.map((a:Row)=>({...a,balance:balance(db,a.id)}));return {revenue:sum('receipts'),expenses:sum('expenses')+active(db,'employeeTransactions').filter((x:Row)=>x.kind==='payment').reduce((n:number,x:Row)=>n+num(x.amount),0),debt:charges(db).reduce((n,r)=>n+num(r.due),0),withdrawals:sum('withdrawals'),cash:bals.filter((a:Row)=>a.type==='cash').reduce((n:number,a:Row)=>n+a.balance,0),bank:bals.filter((a:Row)=>a.type==='bank').reduce((n:number,a:Row)=>n+a.balance,0)}}
-function validate(db:DB,key:string,body:Row,old?:Row){if(['receipts','expenses','withdrawals','transfers'].includes(key)){if(!Number.isFinite(num(body.amount))||num(body.amount)<=0)err('Amount must be greater than zero.');if(!db.accounts.some((a:Row)=>String(a.id)===String(body.account_id||body.from_account)))err('Select a valid account.')}if(key==='shops'&&db.shops.some((r:Row)=>r.number===body.number&&r.id!==old?.id))err('Shop number already exists.');if(key==='contracts'){if(!db.shops.some((a:Row)=>String(a.id)===String(body.shop_id)))err('Select a shop.');if(!db.tenants.some((a:Row)=>String(a.id)===String(body.tenant_id)))err('Select a tenant.');if(!body.start_date||!body.end_date||body.end_date<=body.start_date)err('End date must be after start date.');if(db.contracts.some((r:Row)=>r.id!==old?.id&&r.status!=='closed'&&r.status!=='cancelled'&&String(r.shop_id)===String(body.shop_id)&&r.start_date<=body.end_date&&r.end_date>=body.start_date))err('This shop already has an overlapping contract.')}if(key==='employees'){if(!String(body.name||'').trim())err('Employee name required');if(!Number.isFinite(Number(body.salary))||num(body.salary)<0)err('Invalid monthly salary');if(body.start_date&&body.end_date&&body.end_date<body.start_date)err('End date precedes start date')}if(key==='partners'){const total=db.partners.filter((r:Row)=>r.id!==old?.id).reduce((a:number,r:Row)=>a+num(r.share),0)+num(body.share);if(!Number.isFinite(Number(body.share))||Number(body.share)<=0||total>100.00001)err('Total partner shares must not exceed 100%, and each share must be greater than zero.')}if(key==='withdrawals'||key==='expenses'||key==='transfers'){if(key==='transfers'&&String(body.from_account)===String(body.to_account))err('Transfer requires different accounts.');if(balance(db,body.account_id||body.from_account)<num(body.amount))err('Insufficient account balance.')}if(key==='receipts'){if(body.period&&!/^\d{4}-\d{2}$/.test(String(body.period)))err('Invalid rent month.');let tenant=db.tenants.some((x:Row)=>String(x.id)===String(body.tenant_id));if(!tenant)err('Select a valid tenant.');if(!db.contracts.some((c:Row)=>String(c.tenant_id)===String(body.tenant_id)))err('Tenant must have a rental contract.')}}
+function validate(db:DB,key:string,body:Row,old?:Row){if(['receipts','expenses','withdrawals','transfers'].includes(key)){if(!Number.isFinite(num(body.amount))||num(body.amount)<=0)err('Amount must be greater than zero.');if(!db.accounts.some((a:Row)=>String(a.id)===String(body.account_id||body.from_account)))err('Select a valid account.')}if(key==='shops'&&db.shops.some((r:Row)=>r.number===body.number&&r.id!==old?.id))err('Shop number already exists.');if(key==='contracts'){if(!db.shops.some((a:Row)=>String(a.id)===String(body.shop_id)))err('Select a shop.');if(!db.tenants.some((a:Row)=>String(a.id)===String(body.tenant_id)))err('Select a tenant.');if(!body.start_date||!body.end_date||body.end_date<=body.start_date)err('End date must be after start date.');if(db.contracts.some((r:Row)=>r.id!==old?.id&&r.status!=='closed'&&r.status!=='cancelled'&&r.status!=='terminated'&&String(r.shop_id)===String(body.shop_id)&&r.start_date<=body.end_date&&r.end_date>=body.start_date))err('This shop already has an overlapping contract.')}if(key==='employees'){if(!String(body.name||'').trim())err('Employee name required');if(!Number.isFinite(Number(body.salary))||num(body.salary)<0)err('Invalid monthly salary');if(body.start_date&&body.end_date&&body.end_date<body.start_date)err('End date precedes start date')}if(key==='partners'){const total=db.partners.filter((r:Row)=>r.id!==old?.id).reduce((a:number,r:Row)=>a+num(r.share),0)+num(body.share);if(!Number.isFinite(Number(body.share))||Number(body.share)<=0||total>100.00001)err('Total partner shares must not exceed 100%, and each share must be greater than zero.')}if(key==='withdrawals'||key==='expenses'||key==='transfers'){if(key==='transfers'&&String(body.from_account)===String(body.to_account))err('Transfer requires different accounts.');if(balance(db,body.account_id||body.from_account)<num(body.amount))err('Insufficient account balance.')}if(key==='receipts'){if(body.period&&!/^\d{4}-\d{2}$/.test(String(body.period)))err('Invalid rent month.');let tenant=db.tenants.some((x:Row)=>String(x.id)===String(body.tenant_id));if(!tenant)err('Select a valid tenant.');if(!db.contracts.some((c:Row)=>String(c.tenant_id)===String(body.tenant_id)))err('Tenant must have a rental contract.')}}
 const modules=['dashboard','shops','tenants','contracts','charges','receipts','expenses','partners','withdrawals','accounts','transfers','distributions','reports','settings','recycleBin','employees'];
 const perms=['read','create','update','delete','print'];
 const roleDefaults:Record<string,string[]>={admin:perms,manager:['read','create','update','print'],accountant:['read','create','print'],viewer:['read']};
@@ -150,10 +150,52 @@ if(path.startsWith('employeeTransactions/')&&method==='POST'){
  if(!String(body.reason||'').trim())err('Correction reason required');
  row.voided_at=iso();row.void_reason=String(body.reason);audit(db,'void','employeeTransactions',row.id);persist(db);return row;
 }
+if(path==='contractSign'&&method==='POST'){
+ if(!allowed(currentUser,'contracts','update'))err('Access denied');
+ const contract=db.contracts.find((c:Row)=>String(c.id)===String(body.contract_id));
+ if(!contract)err('Contract not found.');
+ if(['cancelled','terminated'].includes(String(contract.status)))err('Cannot sign a cancelled or terminated contract.');
+ contract.document_status='signed';contract.signed_at=iso();
+ audit(db,'sign','contracts',contract.id);persist(db);return {ok:true,contract};
+}
+if(path==='contractLifecycle'&&method==='POST'){
+ if(!allowed(currentUser,'contracts','update'))err('Access denied');
+ const old=db.contracts.find((c:Row)=>String(c.id)===String(body.contract_id));
+ if(!old)err('Contract not found.');
+ if(['cancelled','terminated','closed'].includes(String(old.status)))err('This contract is already terminated.');
+ const action=String(body.action||'');
+ const reason=String(body.reason||'').trim();
+ if(!reason)err('A reason is required.');
+ if(action==='cancel'){
+  const effective=String(body.effective_date||date());
+  if(String(old.start_date||'')<=date()||!/^\d{4}-\d{2}-\d{2}$/.test(effective)||effective>date()||effective>=String(old.start_date))err('Cancellation is available only before the contract starts.');
+  old.status='cancelled';old.cancellation_date=effective;old.cancellation_reason=reason;old.cancelled_at=iso();
+  audit(db,'cancel','contracts',old.id);persist(db);return {ok:true,contract:old};
+ }
+ if(action==='terminate'){
+  const effective=String(body.effective_date||'');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(effective)||date()<old.start_date||effective<old.start_date||effective>date()||effective>old.end_date)err('Termination date must be during the contract and not in the future.');
+  old.original_end_date ||= old.end_date;
+  old.termination_date=effective;
+  old.status='terminated';old.termination_reason=reason;old.terminated_at=iso();
+  audit(db,'terminate','contracts',old.id);persist(db);return {ok:true,contract:old};
+ }
+ if(action==='renew'){
+  if(String(old.end_date)>=date())err('Renewal is available after the current contract ends.');
+  if(db.contracts.some((c:Row)=>String(c.renewed_from)===String(old.id)))err('This contract has already been renewed.');
+  const start=String(body.start_date||''),end=String(body.end_date||'');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(start)||!/^\d{4}-\d{2}-\d{2}$/.test(end)||start<=old.end_date||end<=start)err('Renewal must begin after the old contract ends, and its end must be later.');
+  if(!Number.isFinite(Number(body.monthly_rent))||num(body.monthly_rent)<=0)err('Enter a valid monthly rent.');
+  if(db.contracts.some((c:Row)=>String(c.shop_id)===String(old.shop_id)&&c.id!==old.id&&!['closed','cancelled','terminated'].includes(String(c.status))&&c.start_date<=end&&c.end_date>=start))err('Another contract overlaps the renewal dates.');
+  const next={id:ensureId(db),shop_id:old.shop_id,tenant_id:old.tenant_id,start_date:start,end_date:end,monthly_rent:num(body.monthly_rent),deposit:num(old.deposit),payment_day:old.payment_day||'',contract_number:String(body.contract_number||''),renewed_from:old.id,notes:reason,created_at:iso()};
+  db.contracts.push(next);audit(db,'renew','contracts',next.id);persist(db);return {ok:true,contract:next};
+ }
+ err('Invalid lifecycle operation.');
+}
 if(path==='dashboard')return dashboard(db);if(path==='balances')return db.accounts.map((a:Row)=>({...a,balance:balance(db,a.id)}));if(path==='charges')return charges(db);if(path==='tenantStatements')return tenantStatements(db);if(path==='rentAllocations')return rentLedger(db).allocations;if(path==='settings'){if(method==='PUT'){requireAdmin(db);db.settings={...db.settings,...body};audit(db,'update','settings',1);persist(db)}return db.settings}
 if(path.startsWith('void/')){const [,key,id]=path.split('/');if(!allowed(currentUser,key,'delete'))err('Access denied');if(!['receipts','expenses','withdrawals'].includes(key))err('Not allowed');let row=db[key].find((r:Row)=>String(r.id)===id);if(!row)err('Not found');if(row.voided_at)err('Already voided');if(!body.reason?.trim())err('Correction reason is required');db.recycleBin.unshift({recycle_id:ensureId(db),collection:key,record:{...row},voided:true,deleted_at:iso(),deleted_by:currentUser.name||currentUser.email});row.voided_at=iso();row.void_reason=body.reason;audit(db,'void',key,id);persist(db);return row}
 let [key,id]=path.split('/');if(!collections.includes(key))err('Unknown operation: '+path);if(method==='GET'){if(key==='users'&&currentUser.role!=='admin')err('Access denied');if(key==='audit'&&currentUser.role!=='admin')err('Access denied');if(!allowed(currentUser,key,'read'))err('Access denied');return key==='users'?db.users.map(userSafe):enriched(db,key)}if(method==='DELETE'){if(!allowed(currentUser,key,'delete'))err('Access denied');if(key==='users'&&(id==='1'||String(currentUser.id)===id))err('Cannot delete the administrator or your own account.');if(!['shops','tenants','partners','contracts','accounts','users','employees'].includes(key))err('Only master records can be deleted. Void financial transactions.');const original=db[key].find((r:Row)=>String(r.id)===id);if(!original)err('Record not found');const relation:Record<string,[string,string][]>={shops:[['contracts','shop_id']],tenants:[['contracts','tenant_id'],['receipts','tenant_id']],partners:[['withdrawals','partner_id'],['distributions','partner_id']],contracts:[['receipts','tenant_id']],employees:[['employeeTransactions','employee_id']],accounts:[['receipts','account_id'],['expenses','account_id'],['employeeTransactions','account_id'],['withdrawals','account_id'],['transfers','from_account'],['transfers','to_account']]};for(const [coll,field] of relation[key]||[]){const linked=(key==='contracts'&&coll==='receipts')?(db.receipts||[]).some((r:Row)=>String(r.tenant_id)===String(original.tenant_id)):(db[coll]||[]).some((r:Row)=>String(r[field])===id);if(linked)err('Record is linked to other data. Remove the related records first.')}db.recycleBin.unshift({recycle_id:ensureId(db),collection:key,record:{...original},deleted_at:iso(),deleted_by:currentUser.name||currentUser.email});db[key]=db[key].filter((r:Row)=>String(r.id)!==id);audit(db,'trash',key,id);persist(db);return {ok:true}}if(!['POST','PUT'].includes(method))err('Operation not supported');if(!allowed(currentUser,key,method==='POST'?'create':'update'))err('Access denied');if(key==='users'&&currentUser.role!=='admin')err('Access denied');if(key==='distributions'){if(method!=='POST')err('Cannot change approved distribution');let share=db.partners.reduce((n:number,p:Row)=>n+num(p.share),0);if(Math.abs(share-100)>0.0001)err('Partner share total must equal 100%.');if(db.distributions.some((r:Row)=>r.period===body.period))err('Profit already distributed for this period');if(num(body.amount)<=0)err('Profit must be positive');for(let partner of db.partners){let rec={id:ensureId(db),period:body.period,partner_id:partner.id,partner:name(db,'partners',partner.id),share_snapshot:partner.share,partner_amount:Number((num(body.amount)*num(partner.share)/100).toFixed(2)),amount:body.amount,notes:body.notes||'',created_at:iso()};db.distributions.push(rec)}audit(db,'approve','distributions',body.period);persist(db);return {ok:true}}
-let row=method==='PUT'?db[key].find((r:Row)=>String(r.id)===id):undefined;if(method==='PUT'&&!row)err('Record not found');if(['receipts','expenses','withdrawals','transfers'].includes(key)&&method==='PUT')err('Financial records cannot be edited. Void and recreate instead.');validate(db,key,body,row);if(key==='shops'&&body.status==='occupied')body.status='vacant';if(key==='contracts'&&(!body.status||body.status==='vacant'))delete body.status;if(key==='users'){
+let row=method==='PUT'?db[key].find((r:Row)=>String(r.id)===id):undefined;if(method==='PUT'&&!row)err('Record not found');if(['receipts','expenses','withdrawals','transfers'].includes(key)&&method==='PUT')err('Financial records cannot be edited. Void and recreate instead.');validate(db,key,body,row);if(key==='shops'&&body.status==='occupied')body.status='vacant';if(key==='contracts'&&(!body.status||body.status==='vacant'))delete body.status;if(key==='contracts')delete body.document_status;if(key==='users'){
  const email=String(body.email||'').trim().toLowerCase();if(!email||!body.name)err('Name and email are required.');
  if(db.users.some((u:Row)=>u.email===email&&u.id!==row?.id))err('Email already registered.');
  if(!row&&!body.password)err('Password is required for new user.');

@@ -1,3 +1,4 @@
+import {appConfirm,appPrompt,appAlert,appToast} from '../AppDialogs';
 import React,{useEffect,useState} from 'react';
 import {usePage} from './PageContext';
 type Entry={recycle_id:number;collection:string;record:Record<string,any>;deleted_at:string;deleted_by?:string};
@@ -8,6 +9,6 @@ export default function RecycleBinPage(){
  const load=()=>api('recycleBin').then((r:Entry[])=>{setRows(r||[]);setError('')}).catch((e:Error)=>setError(e.message));
  useEffect(()=>{if(page==='recycleBin')void load()},[page]);
  if(page!=='recycleBin')return null;
- const run=async(action:'restore'|'purge',item:Entry)=>{if(!window.confirm(action==='restore'?labels.restoreConfirm:labels.confirm))return;setBusy(true);try{await api(`recycleBin/${action}/${item.recycle_id}`,{method:'POST'});await load();await refresh()}catch(e:any){setError(e.message)}finally{setBusy(false)}};
+ const run=async(action:'restore'|'purge',item:Entry)=>{if(!await appConfirm(action==='restore'?labels.restoreConfirm:labels.confirm))return;setBusy(true);try{await api(`recycleBin/${action}/${item.recycle_id}`,{method:'POST'});await load();await refresh()}catch(e:any){setError(e.message)}finally{setBusy(false)}};
  return <section className="recycle-panel"><div className="recycle-head"><div><h2>{labels.title}</h2><p>{labels.help}</p></div><span>{rows.length}</span></div>{error&&<div className="error">{error}</div>}{!admin?<p>{lang==='en'?'Administrator access required.':'دسترسی مخصوص مدیر سیستم است.'}</p>:!rows.length?<p className="muted">{labels.empty}</p>:<div className="tablewrap"><table><thead><tr><th>{labels.record}</th><th>{lang==='en'?'Module':'بخش'}</th><th>{labels.deleted}</th><th>{labels.by}</th><th>{t('actions')}</th></tr></thead><tbody>{rows.map(item=><tr key={item.recycle_id}><td>{item.record.name||item.record.number||item.record.contract_number||`#${item.record.id}`}</td><td>{t(item.collection)}</td><td>{new Date(item.deleted_at).toLocaleString()}</td><td>{item.deleted_by||'—'}</td><td><div className="recycle-actions"><button disabled={busy} className="primary" onClick={()=>run('restore',item)}>{labels.restore}</button><button disabled={busy} className="danger" onClick={()=>run('purge',item)}>{labels.purge}</button></div></td></tr>)}</tbody></table></div>}</section>
 }
