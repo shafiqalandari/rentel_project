@@ -1,3 +1,7 @@
+import {clientAccessRouter} from './client-access.js';
+import { createCentralRouter, seedCentralAdmin } from './central-admin.js';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import 'dotenv/config';
 import express from 'express';
 import pg from 'pg';
@@ -6,6 +10,9 @@ import rateLimit from 'express-rate-limit';
 import {randomBytes,scryptSync,timingSafeEqual,createHash} from 'node:crypto';
 const app=express(), pool=new pg.Pool({connectionString:process.env.DATABASE_URL});
 app.use(helmet());app.use(express.json({limit:'150kb'}));
+app.use('/central-admin',express.static(path.join(path.dirname(fileURLToPath(import.meta.url)),'central-ui'),{index:'index.html'}));
+app.use('/api/central',createCentralRouter(pool));
+app.use('/api/client-access',clientAccessRouter(pool));
 const wrap=f=>(req,res,next)=>Promise.resolve(f(req,res,next)).catch(next);
 const hash=p=>{let salt=randomBytes(16).toString('hex');return `${salt}:${scryptSync(p,salt,64).toString('hex')}`};
 const compare=(pass,saved)=>{try{let [salt,hex]=saved.split(':');return timingSafeEqual(Buffer.from(hex,'hex'),scryptSync(pass,salt,64))}catch{return false}};
@@ -53,5 +60,5 @@ app.post('/api/users',permitted('admin'),wrap(async(req,res)=>{let {name,email,p
 app.get('/api/audit',permitted('admin'),wrap(async(req,res)=>res.json((await query('SELECT * FROM audit_logs ORDER BY id DESC LIMIT 300')).rows)));
 app.post('/api/void/:table/:id',permitted('admin'),wrap(async(req,res)=>{let table=req.params.table;if(!['receipts','expenses','withdrawals'].includes(table))fail(400,'Unsupported');let reason=String(req.body.reason||'').trim();if(reason.length<5)fail(400,'Correction reason required');let row=await transaction(async c=>{let r=await c.query(`UPDATE ${table} SET voided_at=now(),void_reason=$1 WHERE id=$2 AND voided_at IS NULL RETURNING *`,[reason,req.params.id]);if(!r.rowCount)fail(404,'Active transaction not found');await audit(c,req.user.id,'void',table,r.rows[0].id,{reason});return r.rows[0]});res.json(row)}));
 app.use((err,req,res,next)=>{console.error(err);let code=err.status|| (err.code==='23505'?409:err.code==='23503'?400:err.code==='23514'?400:500);res.status(code).json({error:code===500?'Unexpected server error':err.message})});
-async function bootstrap(){if(!process.env.DATABASE_URL)throw Error('DATABASE_URL required');let r=await query('SELECT count(*)::int as n FROM users');if(r.rows[0].n===0){let pass=process.env.SEED_ADMIN_PASSWORD;if(!pass||pass.length<12)throw Error('Set SEED_ADMIN_PASSWORD (at least 12 chars) for initial admin');await query('INSERT INTO users(name,email,password_hash,role) VALUES($1,$2,$3,$4)', ['Administrator',String(process.env.SEED_ADMIN_EMAIL||'admin@market.local').toLowerCase(),hash(pass),'admin']);console.log('Initial admin created')}app.listen(Number(process.env.PORT||3001),()=>console.log('API listening'))}
+async function bootstrap(){if(!process.env.DATABASE_URL)throw Error('DATABASE_URL required');await seedCentralAdmin(pool);let r=await query('SELECT count(*)::int as n FROM users');if(r.rows[0].n===0){let pass=process.env.SEED_ADMIN_PASSWORD;if(!pass||pass.length<12)throw Error('Set SEED_ADMIN_PASSWORD (at least 12 chars) for initial admin');await query('INSERT INTO users(name,email,password_hash,role) VALUES($1,$2,$3,$4)', ['Administrator',String(process.env.SEED_ADMIN_EMAIL||'admin@market.local').toLowerCase(),hash(pass),'admin']);console.log('Initial admin created')}app.listen(Number(process.env.PORT||3001),()=>console.log('API listening'))}
 bootstrap().catch(e=>{console.error(e.message);process.exit(1)});

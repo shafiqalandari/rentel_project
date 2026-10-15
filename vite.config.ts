@@ -35,5 +35,6 @@ function offlineBundle(): Plugin {
 
 export default defineConfig({
   plugins: [react(), offlineBundle()],
+  server: {proxy: {'/api/client-access': {target:'http://localhost:3001',changeOrigin:true}}},
   build: { target: 'es2018', cssMinify: true, sourcemap: false },
 })

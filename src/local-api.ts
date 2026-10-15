@@ -1,7 +1,16 @@
 /* Offline single-browser storage adapter. No database or network required. */
 type Row=Record<string,any>;
 type DB=Record<string,any>;
-const STORAGE='market_rental_offline_v1';
+const LEGACY_STORAGE='market_rental_offline_v1';
+const MARKET_SCOPE='market_active_organization_v1';
+// This partitions local browser data only. It is not server-side multi-tenant security.
+function storageKey(){
+ if(import.meta.env.VITE_LICENSE_ENFORCED!=='true')return LEGACY_STORAGE;
+ const id=sessionStorage.getItem(MARKET_SCOPE)||'';
+ if(!/^[0-9]{1,20}$/.test(id))err('Market license must be verified before opening financial data.');
+ return `market_rental_organization_${id}_v1`;
+}
+
 const LOGIN_SESSION_KEY='market_auth_session_v3';
 const TOKEN_PREFIX='market-v3-';
 function hasValidSession(){const token=sessionStorage.getItem(LOGIN_SESSION_KEY)||'';return token.startsWith(TOKEN_PREFIX)&&token.length>24&&sessionStorage.getItem('market_token')===token}
@@ -15,8 +24,8 @@ const num=(v:any)=>Number(v||0);
 const err=(message:string):never=>{throw Error(message)};
 const period=(dateString:string)=>String(dateString||'').slice(0,7);
 function initial():DB{return {settings:{name:'My Market',currency:'AFN'},shops:[],tenants:[],contracts:[],receipts:[],expenses:[],partners:[],withdrawals:[],accounts:[{id:1,name:'Cash',type:'cash',opening_balance:0}],distributions:[],transfers:[],employees:[],employeeTransactions:[],users:[{id:1,name:'Local Admin',email:DEFAULT_ADMIN_EMAIL,role:'admin',active:true}],recycleBin:[],audit:[],seq:2}}
-function load():DB{try{let value=localStorage.getItem(STORAGE);let db=value?{...initial(),...JSON.parse(value)}:initial();db.recycleBin ||= [];return db}catch{return initial()}}
-function persist(db:DB){try{localStorage.setItem(STORAGE,JSON.stringify(db))}catch{err('Local browser storage is full or blocked. Export a backup and free storage.')}}
+function load():DB{try{let value=localStorage.getItem(storageKey());let db=value?{...initial(),...JSON.parse(value)}:initial();db.recycleBin ||= [];return db}catch{return initial()}}
+function persist(db:DB){try{localStorage.setItem(storageKey(),JSON.stringify(db))}catch{err('Local browser storage is full or blocked. Export a backup and free storage.')}}
 function ensureId(db:DB){return db.seq++}
 function audit(db:DB,action:string,entity:string,id:any){db.audit.unshift({id:ensureId(db),action,entity,entity_id:id,created_at:iso()})}
 function name(db:DB,key:string,id:any,field='name'){return db[key].find((x:Row)=>String(x.id)===String(id))?.[field]||''}
