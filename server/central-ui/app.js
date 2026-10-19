@@ -43,16 +43,53 @@ function statusConfirm(org){const next=org.status==='active'?'suspended':'active
 async function logout(){try{await api('/logout',{method:'POST'})}catch{}token='';sessionStorage.removeItem('central_admin_token');show(false);closeModal()}
 
 let devices=[];
+function deviceDetails(d){
+ const raw=String(d.user_agent||'');const name=String(d.device_name||'').trim();
+ let os='نامشخص';
+ if(/android/i.test(raw+' '+name))os='Android';
+ else if(/iPhone/i.test(raw+' '+name))os='iPhone / iOS';
+ else if(/iPad/i.test(raw+' '+name))os='iPad / iPadOS';
+ else if(/Windows NT|Win32/i.test(raw+' '+name))os='Windows';
+ else if(/Macintosh|MacIntel|Mac OS X/i.test(raw+' '+name))os='macOS';
+ else if(/Linux|aarch64/i.test(raw+' '+name))os='Linux';
+ let browser='نامشخص';
+ if(/Edg\/|EdgA\/|EdgiOS\//i.test(raw))browser='Edge';
+ else if(/OPR\/|Opera/i.test(raw))browser='Opera';
+ else if(/Firefox\/|FxiOS\//i.test(raw))browser='Firefox';
+ else if(/CriOS\/|Chrome\//i.test(raw))browser='Chrome';
+ else if(/Safari\//i.test(raw))browser='Safari';
+ const mobile=/Mobi|Android|iPhone|iPad|Mobile|Tablet/i.test(raw+' '+name);
+ const kind=/iPad|Tablet/i.test(raw+' '+name)?'تبلت':mobile?'موبایل':'کمپیوتر / لپ‌تاپ';
+ const generic=/^(Win32|Win64|Linux|Linux aarch64|MacIntel|Browser|Device|Android|iPhone|iPad)$/i.test(name);
+ return {name:!name||generic?kind+' ('+os+')':name,os,browser,kind};
+}
+function fullDeviceDate(value){if(!value)return 'ثبت نشده';const date=new Date(value);return Number.isNaN(date.getTime())?'نامشخص':date.toLocaleString('fa-AF',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})}
 async function loadDevices(){
- devices=await api('/devices');const rows=devices.map(d=>{
- const tr=make('tr');tr.append(make('td',d.organization_name),make('td',d.device_name));const cell=make('td');cell.append(pill(d.status));tr.append(cell,make('td',formatDate(d.created_at)));
- const actions=make('td','','inline-actions');for(const [status,label] of [['approved','تأیید'],['blocked','بلاک'],['pending','در انتظار']]){
- if(status===d.status)continue;actions.append(button(label,()=>updateDevice(d,status),status==='blocked'?'danger':'ghost'));
- }tr.append(actions);return tr;
+ devices=await api('/devices');if(!Array.isArray(devices))throw Error('فهرست دستگاه‌ها معتبر نیست');
+ const rows=devices.map(d=>{
+  const info=deviceDetails(d),tr=make('tr');
+  const org=make('td');org.append(make('b',d.organization_name||'مشتری مشخص نیست'),make('div',d.record_type==='visitor'?'بازدیدکننده / بدون دستگاه ثبت‌شده':'دستگاه ثبت‌شده مشتری','muted'));tr.append(org);
+  const device=make('td');device.append(make('b',info.name),make('div',info.kind+' | '+info.os+' | '+info.browser,'muted'),make('div','شناسه: '+(d.device_fingerprint||'نامشخص'),'muted'));tr.append(device);
+  const statusCell=make('td');statusCell.append(pill(d.status));tr.append(statusCell);
+  const timing=make('td');timing.append(make('div','آخرین استفاده: '+fullDeviceDate(d.last_seen_at)),make('div','ثبت: '+fullDeviceDate(d.created_at),'muted'));tr.append(timing);
+  const actions=make('td','','inline-actions');actions.append(button('جزئیات',()=>showDevice(d)));
+  for(const [status,label] of [['approved','تأیید'],['blocked','بلاک'],['pending','در انتظار']]){
+   if(status===d.status)continue;
+   actions.append(button(label,()=>updateDevice(d,status),status==='blocked'?'danger':'ghost'));
+  }tr.append(actions);return tr;
  });$('devices-list').replaceChildren(...(rows.length?rows:[emptyRow(5)]));
 }
+function showDevice(d){
+ const info=deviceDetails(d);modal('مشخصات دستگاه','DEVICE DETAILS');
+ const details=[['مشتری',d.organization_name||'نامشخص'],['نوع',info.kind],['نام ثبت‌شده',d.device_name||'نامشخص'],['سیستم‌عامل',info.os],['مرورگر',info.browser],['شناسه کوتاه',d.device_fingerprint||'نامشخص'],['وضعیت',states[d.status]||d.status],['آخرین فعالیت',fullDeviceDate(d.last_seen_at)],['تاریخ ثبت',fullDeviceDate(d.created_at)],['User-Agent',d.user_agent||'در ثبت‌های قدیمی موجود نیست']];
+ const grid=make('div','','system-info');details.forEach(([label,value])=>{const el=make('div');el.append(make('span',label),make('b',value));grid.append(el)});
+ $('modal-content').append(grid,button('بستن',closeModal));
+}
 async function updateDevice(device,status){
- modal('تغییر وضعیت دستگاه','DEVICE APPROVAL');$('modal-content').append(make('p',`وضعیت «${device.device_name}» به «${status==='approved'?'تأییدشده':status==='blocked'?'بلاک‌شده':'در انتظار'}» تغییر کند؟`));
+ const info=deviceDetails(device);
+ modal('تغییر وضعیت دستگاه','DEVICE APPROVAL');
+ $('modal-content').append(make('p',`مشتری: ${device.organization_name||'نامشخص'} | دستگاه: ${info.name} | شناسه: ${device.device_fingerprint||'نامشخص'}`));
+ $('modal-content').append(make('p',`وضعیت به «${status==='approved'?'تأییدشده':status==='blocked'?'بلاک‌شده':'در انتظار'}» تغییر کند؟`));
  const foot=make('div','','modal-actions');foot.append(button('تأیید',async()=>{try{await api((device.record_type==='visitor'?'/device-visitors/':'/devices/')+device.id,{method:'PATCH',body:JSON.stringify({status})});closeModal();await loadDevices();await refresh();notice('وضعیت دستگاه ذخیره شد')}catch(e){notice(e.message)}},'primary'),button('انصراف',closeModal));$('modal-content').append(foot);
 }
 function newDevice(){

@@ -13,7 +13,7 @@ const endpoint=(name:string)=>base+'/client-access/'+name;
 type Lang='fa'|'ps'|'en';
 function deviceId(){let id=localStorage.getItem(DEVICE);if(!id){id=crypto.randomUUID()+'-'+crypto.randomUUID();localStorage.setItem(DEVICE,id)}return id}
 async function request(path:string,payload:Record<string,unknown>){
- const res=await fetch(endpoint(path),{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_key:deviceId(),device_name:navigator.platform||'Browser',...payload})});
+ const res=await fetch(endpoint(path),{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json'},body:JSON.stringify({device_key:deviceId(),device_name:(()=>{const ua=navigator.userAgent||'';const platform=navigator.platform||'';if(/iPhone/i.test(ua))return 'iPhone';if(/iPad/i.test(ua))return 'iPad';if(/Android/i.test(ua)){const model=/Android[^;)]*;\s*([^;)]+)\)/i.exec(ua)?.[1]?.trim();return model&&model.length<90&&!/^(wv|Build\/)/i.test(model)?'Android - '+model:'Android mobile / tablet';}if(/Windows/i.test(ua))return 'Windows PC';if(/Macintosh|Mac OS X/i.test(ua))return 'Mac computer';if(/Linux/i.test(ua))return 'Linux computer';return platform||'Browser';})(),...payload})});
  const data=await res.json().catch(()=>({}));if(!res.ok)throw Error(data.error||'Access denied');return data;
 }
 function clearLocalSession(){

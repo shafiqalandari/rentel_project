@@ -130,12 +130,12 @@ export function createCentralRouter(pool) {
   router.get('/devices',safe(async(req,res)=>{
   const {rows}=await run(`SELECT d.id,'customer' record_type,v.id visitor_id,d.organization_id,o.name organization_name,d.device_name,
     CASE WHEN d.status='blocked' OR v.status='blocked' THEN 'blocked' WHEN d.status='pending' OR v.status='pending' THEN 'pending' ELSE 'approved' END status,
-    left(d.device_key_hash,12) device_fingerprint,d.last_seen_at,d.created_at
+    left(d.device_key_hash,12) device_fingerprint,COALESCE(v.user_agent,'') user_agent,d.last_seen_at,d.created_at
     FROM central_client_devices d JOIN client_organizations o ON o.id=d.organization_id
     LEFT JOIN central_device_visitors v ON v.organization_id=d.organization_id AND v.device_key_hash=d.device_key_hash
     UNION ALL
     SELECT v.id,'visitor' record_type,v.id visitor_id,v.organization_id,COALESCE(o.name,'دستگاه بازدیدکننده / هنوز وارد نشده') organization_name,v.device_name,v.status,
-    v.device_key_hint device_fingerprint,v.last_seen_at,v.first_seen_at created_at
+    v.device_key_hint device_fingerprint,COALESCE(v.user_agent,'') user_agent,v.last_seen_at,v.first_seen_at created_at
     FROM central_device_visitors v LEFT JOIN client_organizations o ON o.id=v.organization_id
     WHERE NOT EXISTS (SELECT 1 FROM central_client_devices d WHERE d.organization_id=v.organization_id AND d.device_key_hash=v.device_key_hash)
     ORDER BY last_seen_at DESC NULLS LAST, created_at DESC LIMIT 500`);
