@@ -7,7 +7,7 @@ const hash = password => { const salt=randomBytes(16).toString('hex'); return `$
 const verify = (password,saved) => { try {const [salt,hex]=saved.split(':');const a=Buffer.from(hex,'hex');const b=scryptSync(password,salt,64);return a.length===b.length && timingSafeEqual(a,b);}catch{return false;} };
 const validId = raw => { const value=Number(raw);return Number.isSafeInteger(value) && value>0 ? value:null; };
 const clean = (raw,max=160) => String(raw??'').trim().slice(0,max);
-const allowedPlan = ['trial','monthly','annual','lifetime'];
+const allowedPlan = ['trial','monthly','annual','custom','lifetime'];
 const allowedStatus = ['active','suspended'];
 const allowedLicenseStatus = ['active','paused','revoked'];
 
@@ -64,7 +64,24 @@ export function createCentralRouter(pool) {
  }));
  router.post('/organizations',safe(async(req,res)=>{
   const b=req.body||{};const name=clean(b.name,150);if(!name)fail(400,'Organization name required');
-  const record=await withTransaction(async c=>{const {rows}=await c.query('INSERT INTO client_organizations(name,contact_name,email,phone,notes) VALUES($1,$2,$3,$4,$5) RETURNING *',[name,clean(b.contact_name),clean(b.email,200),clean(b.phone,60),clean(b.notes,1000)]);await audit(c,req.centralAdmin.id,'create','organization',rows[0].id);return rows[0];});
+  const email=clean(b.email,200).toLowerCase();const password=String(b.password||'');
+  if((email||password)&&(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||password.length<12||password.length>200))fail(400,'Valid customer email and password (12+ characters) required');
+  const plan=b.plan||'trial';if(!allowedPlan.includes(plan))fail(400,'Invalid plan');
+  const start=b.starts_at?new Date(b.starts_at):new Date();
+  let end=b.expires_at?new Date(b.expires_at):null;
+  if(Number.isNaN(start.getTime()))fail(400,'Invalid start date');
+  if(plan==='trial'&&!end)end=new Date(start.getTime()+7*24*60*60*1000);
+  if(plan==='monthly'&&!end)end=new Date(start.getTime()+30*24*60*60*1000);
+  if(plan==='annual'&&!end)end=new Date(start.getTime()+365*24*60*60*1000);
+  if(plan!=='lifetime'&&(!end||Number.isNaN(end.getTime())||end<=start))fail(400,'Valid expiry after start required');
+  const devices=Number(b.max_devices||1);if(!Number.isInteger(devices)||devices<1||devices>10000)fail(400,'Invalid device limit');
+  const record=await withTransaction(async c=>{
+   const {rows}=await c.query('INSERT INTO client_organizations(name,contact_name,email,phone,notes) VALUES($1,$2,$3,$4,$5) RETURNING *',[name,clean(b.contact_name),email,clean(b.phone,60),clean(b.notes,1000)]);
+   const org=rows[0];
+   await c.query(`INSERT INTO client_licenses(organization_id,plan,status,starts_at,expires_at,max_devices) VALUES($1,$2,'active',$3,$4,$5)`,[org.id,plan,start,plan==='lifetime'?null:end,devices]);
+   if(email&&password)await c.query('INSERT INTO central_customer_accounts(organization_id,email,password_hash) VALUES($1,$2,$3)',[org.id,email,hash(password)]);
+   await audit(c,req.centralAdmin.id,'create','organization',org.id,{plan,customer_account:Boolean(email&&password)});return org;
+  });
   res.status(201).json(record);
  }));
  router.patch('/organizations/:id',safe(async(req,res)=>{
@@ -88,6 +105,18 @@ export function createCentralRouter(pool) {
    await audit(c,req.centralAdmin.id,'upsert','license',rows[0].id,{organization_id:id,plan:b.plan,status:b.status||'active',max_devices:devices});return rows[0];
   });res.json(record);
  }));
+ router.put('/organizations/:id/credentials',safe(async(req,res)=>{
+  const id=validId(req.params.id);if(!id)fail(400,'Invalid customer ID');
+  const email=clean(req.body?.email,200).toLowerCase();const password=String(req.body?.password||'');
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||password.length<12||password.length>200)fail(400,'Valid email and password (12+ characters) required');
+  await withTransaction(async c=>{
+   const org=await c.query('SELECT id FROM client_organizations WHERE id=$1 FOR UPDATE',[id]);if(!org.rowCount)fail(404,'Customer not found');
+   await c.query(`INSERT INTO central_customer_accounts(organization_id,email,password_hash) VALUES($1,$2,$3)
+     ON CONFLICT(organization_id) DO UPDATE SET email=excluded.email,password_hash=excluded.password_hash,updated_at=now()`,[id,email,hash(password)]);
+   await c.query('DELETE FROM central_customer_sessions WHERE organization_id=$1',[id]);
+   await audit(c,req.centralAdmin.id,'update','customer_credentials',id,{email});
+  });res.json({ok:true,email});
+ }));
  router.post('/organizations/:id/activation',safe(async(req,res)=>{
   const id=validId(req.params.id);if(!id)fail(400,'Invalid organization ID');
   const code=randomBytes(24).toString('base64url');
@@ -99,10 +128,24 @@ export function createCentralRouter(pool) {
   });
   res.json({activation_code:code,message:'Copy this code now. It will not be displayed again.'});
  }));
- router.get('/devices',safe(async(req,res)=>{
-  const {rows}=await run(`SELECT d.id,d.organization_id,o.name organization_name,d.device_name,d.status,d.last_seen_at,d.created_at
-    FROM central_client_devices d JOIN client_organizations o ON o.id=d.organization_id ORDER BY d.id DESC LIMIT 500`);
+  router.get('/devices',safe(async(req,res)=>{
+  const {rows}=await run(`SELECT d.id,'customer' record_type,v.id visitor_id,d.organization_id,o.name organization_name,d.device_name,
+    CASE WHEN d.status='blocked' OR v.status='blocked' THEN 'blocked' WHEN d.status='pending' OR v.status='pending' THEN 'pending' ELSE 'approved' END status,
+    left(d.device_key_hash,12) device_fingerprint,d.last_seen_at,d.created_at
+    FROM central_client_devices d JOIN client_organizations o ON o.id=d.organization_id
+    LEFT JOIN central_device_visitors v ON v.organization_id=d.organization_id AND v.device_key_hash=d.device_key_hash
+    UNION ALL
+    SELECT v.id,'visitor' record_type,v.id visitor_id,v.organization_id,COALESCE(o.name,'دستگاه بازدیدکننده / هنوز وارد نشده') organization_name,v.device_name,v.status,
+    v.device_key_hint device_fingerprint,v.last_seen_at,v.first_seen_at created_at
+    FROM central_device_visitors v LEFT JOIN client_organizations o ON o.id=v.organization_id
+    WHERE NOT EXISTS (SELECT 1 FROM central_client_devices d WHERE d.organization_id=v.organization_id AND d.device_key_hash=v.device_key_hash)
+    ORDER BY last_seen_at DESC NULLS LAST, created_at DESC LIMIT 500`);
   res.json(rows);
+ }));
+ router.post('/organizations/:id/revoke-sessions',safe(async(req,res)=>{
+  const id=validId(req.params.id);if(!id)fail(400,'Invalid organization ID');
+  const result=await withTransaction(async c=>{const org=await c.query('SELECT id FROM client_organizations WHERE id=$1',[id]);if(!org.rowCount)fail(404,'Organization not found');const r=await c.query('DELETE FROM central_customer_sessions WHERE organization_id=$1',[id]);await audit(c,req.centralAdmin.id,'revoke_sessions','organization',id,{count:r.rowCount});return r.rowCount});
+  res.json({ok:true,revoked:result});
  }));
  router.post('/organizations/:id/devices',safe(async(req,res)=>{
   const org=validId(req.params.id);if(!org)fail(400,'Invalid organization ID');
@@ -115,6 +158,26 @@ export function createCentralRouter(pool) {
       device_name=excluded.device_name,updated_at=now() RETURNING id,organization_id,device_name,status,created_at`,[org,name,digest(key)]);
     await audit(c,req.centralAdmin.id,'register','device',rows[0].id,{organization_id:org});return rows[0];
   });res.status(201).json(record);
+ }));
+ router.patch('/device-visitors/:id',safe(async(req,res)=>{
+  const id=validId(req.params.id);const status=req.body?.status;
+  if(!id||!['approved','blocked','pending'].includes(status))fail(400,'Invalid device status');
+  const record=await withTransaction(async c=>{
+   const {rows}=await c.query(`SELECT v.*,o.status organization_status,l.status license_status,l.plan,l.starts_at,l.expires_at,l.max_devices
+     FROM central_device_visitors v LEFT JOIN client_organizations o ON o.id=v.organization_id
+     LEFT JOIN client_licenses l ON l.organization_id=v.organization_id WHERE v.id=$1 FOR UPDATE OF v`,[id]);
+   if(!rows.length)fail(404,'Device visitor not found');const v=rows[0];
+   if(status==='approved'&&v.organization_id){
+    if(v.organization_status!=='active'||v.license_status!=='active'||!v.plan||new Date(v.starts_at)>new Date()||(v.plan!=='lifetime'&&(!v.expires_at||new Date(v.expires_at)<=new Date())))fail(409,'Organization license not valid');
+    await c.query('SELECT id FROM client_licenses WHERE organization_id=$1 FOR UPDATE',[v.organization_id]);
+    const known=await c.query('SELECT id FROM central_client_devices WHERE organization_id=$1 AND device_key_hash=$2',[v.organization_id,v.device_key_hash]);
+    const count=await c.query("SELECT count(*)::int n FROM central_client_devices WHERE organization_id=$1 AND status='approved' AND id<>COALESCE($2,0)",[v.organization_id,known.rows[0]?.id||null]);
+    if(count.rows[0].n>=v.max_devices)fail(409,'Device limit reached');
+   }
+   const result=await c.query('UPDATE central_device_visitors SET status=$1,updated_at=now() WHERE id=$2 RETURNING id,organization_id,device_name,status,first_seen_at,last_seen_at',[status,id]);
+   if(v.organization_id)await c.query('UPDATE central_client_devices SET status=$1,updated_at=now() WHERE organization_id=$2 AND device_key_hash=$3',[status,v.organization_id,v.device_key_hash]);
+   await audit(c,req.centralAdmin.id,'status','device_visitor',id,{status,organization_id:v.organization_id});return result.rows[0];
+  });res.json(record);
  }));
  router.patch('/devices/:id',safe(async(req,res)=>{
   const id=validId(req.params.id);const status=req.body?.status;
@@ -131,10 +194,10 @@ export function createCentralRouter(pool) {
       if(count.rows[0].n>=d.max_devices)fail(409,'Device limit reached');
     }
     const result=await c.query('UPDATE central_client_devices SET status=$1,updated_at=now() WHERE id=$2 RETURNING id,organization_id,device_name,status,created_at',[status,id]);
+    await c.query('UPDATE central_device_visitors SET status=$1,updated_at=now() WHERE organization_id=$2 AND device_key_hash=$3',[status,d.organization_id,d.device_key_hash]);
     await audit(c,req.centralAdmin.id,'status','device',id,{status,organization_id:d.organization_id});return result.rows[0];
   });res.json(record);
  }));
- 
  // Subscription catalog, audited renewals and payment review (central admin only).
  router.get('/plans',safe(async(req,res)=>res.json((await run('SELECT * FROM central_plans ORDER BY id DESC')).rows)));
  router.post('/plans',safe(async(req,res)=>{
