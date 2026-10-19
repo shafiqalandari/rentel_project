@@ -3,6 +3,15 @@ type Row=Record<string,any>;
 type DB=Record<string,any>;
 const LEGACY_STORAGE='market_rental_offline_v1';
 const MARKET_SCOPE='market_active_organization_v1';
+const CUSTOMER_SCOPE='market_customer_scope_v1';
+// Browser-only partitioning, NOT server-side tenant isolation.
+export function setCentralOrganizationScope(organization:string|null):void {
+ if(organization===null){sessionStorage.removeItem(MARKET_SCOPE);return;}
+ const match=/^org-([0-9]{1,20})$/.exec(organization);
+ if(!match)throw Error('Invalid organization scope');
+ sessionStorage.setItem(MARKET_SCOPE,match[1]);
+}
+
 // This partitions local browser data only. It is not server-side multi-tenant security.
 function storageKey(){
  if(import.meta.env.VITE_LICENSE_ENFORCED!=='true')return LEGACY_STORAGE;
@@ -105,7 +114,19 @@ function allowed(user:Row,mod:string,op:string){if(user.role==='admin')return tr
 async function hashPassword(password:string,salt:string){const bytes=new TextEncoder().encode(salt+':'+password);const hash=await crypto.subtle.digest('SHA-256',bytes);return Array.from(new Uint8Array(hash)).map(x=>x.toString(16).padStart(2,'0')).join('')}
 function userSafe(user:Row){let {password,password_hash,password_salt,...safe}=user;return safe}
 function requireAdmin(db:DB){const uid=sessionStorage.getItem('market_auth_user_id');const user=db.users.find((u:Row)=>String(u.id)===uid);if(!user||user.role!=='admin')err('Administrator access required.');return user}
-export async function localApi(path:string,opts:RequestInit={}){let db=load(),method=(opts.method||'GET').toUpperCase(),body:Row=opts.body?JSON.parse(String(opts.body)):{};if(path==='login'){
+export async function localApi(path:string,opts:RequestInit={}){let db=load(),method=(opts.method||'GET').toUpperCase(),body:Row=opts.body?JSON.parse(String(opts.body)):{
+};if(path==='customer-session'){
+ if(import.meta.env.VITE_LICENSE_ENFORCED!=='true')err('Central login is not enabled.');
+ const id=sessionStorage.getItem(MARKET_SCOPE)||'';
+ if(!/^[0-9]{1,20}$/.test(id)||localStorage.getItem(CUSTOMER_SCOPE)!=='org-'+id)err('Customer scope is missing.');
+ const admin=db.users.find((u:Row)=>u.role==='admin'&&u.active!==false);
+ if(!admin)err('Local administrator unavailable.');
+ const token=TOKEN_PREFIX+crypto.randomUUID();
+ sessionStorage.setItem(LOGIN_SESSION_KEY,token);
+ sessionStorage.setItem('market_token',token);
+ sessionStorage.setItem('market_auth_user_id',String(admin.id));
+ return {token,user:userSafe(admin)};
+ }if(path==='login'){
  const account=db.users.find((u:Row)=>String(u.email||'').toLowerCase()===String(body.email||'').trim().toLowerCase()&&u.active!==false);
  if(!account)err('Invalid email or password.');
  let valid=false;
