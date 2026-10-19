@@ -9,6 +9,8 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import {randomBytes,scryptSync,timingSafeEqual,createHash} from 'node:crypto';
 const app=express(), pool=new pg.Pool({connectionString:process.env.DATABASE_URL});
+// Trust only the local Nginx reverse proxy, not arbitrary client-provided forwarding headers.
+app.set('trust proxy','loopback');
 app.use(helmet());app.use(express.json({limit:'150kb'}));
 app.use('/central-admin',express.static(path.join(path.dirname(fileURLToPath(import.meta.url)),'central-ui'),{index:'index.html'}));
 app.use('/api/central',createCentralRouter(pool));

@@ -9,7 +9,10 @@ const cookieToken=(req,res)=>{const match=String(req.headers.cookie||'').match(/
 export function clientAccessRouter(pool){
  const router=Router();
  const respond=(fn)=>(req,res,next)=>Promise.resolve().then(()=>fn(req,res)).catch(next);
- const limiter=rateLimit({windowMs:15*60*1000,limit:30,standardHeaders:'draft-7',legacyHeaders:false});
+ // Login protects passwords; periodic device/session polling must not exhaust its quota.
+ const limiter=rateLimit({windowMs:15*60*1000,limit:30,skipSuccessfulRequests:true,standardHeaders:'draft-7',legacyHeaders:false});
+ const deviceLimiter=rateLimit({windowMs:15*60*1000,limit:300,standardHeaders:'draft-7',legacyHeaders:false});
+ const checkLimiter=rateLimit({windowMs:15*60*1000,limit:300,standardHeaders:'draft-7',legacyHeaders:false});
  const verify=(password,saved)=>{try{const [salt,hex]=saved.split(':');const expected=Buffer.from(hex,'hex');const actual=scryptSync(password,salt,64);return expected.length===actual.length&&timingSafeEqual(expected,actual);}catch{return false}};
  const rememberVisitor=async(client,req,res,fingerprint,name,organizationId=null)=>{
   const keyHash=sha(fingerprint),cookieHash=sha(cookieToken(req,res)),userAgent=clean(req.get('user-agent'),500);
@@ -25,7 +28,7 @@ export function clientAccessRouter(pool){
   return rows[0];
  };
  const touchVisitor=async(req,res,fingerprint,name,organizationId=null)=>{const client=await pool.connect();try{await client.query('BEGIN');const visitor=await rememberVisitor(client,req,res,fingerprint,name,organizationId);await client.query('COMMIT');return visitor}catch(error){await client.query('ROLLBACK').catch(()=>{});throw error}finally{client.release()}};
- router.post('/device-seen',limiter,respond(async(req,res)=>{
+ router.post('/device-seen',deviceLimiter,respond(async(req,res)=>{
   const fingerprint=clean(req.body?.device_key,160),name=clean(req.body?.device_name,160)||'Browser';
   if(!validKey(fingerprint))return res.status(400).json({error:'Device required'});
   const visitor=await touchVisitor(req,res,fingerprint,name);
@@ -46,6 +49,7 @@ export function clientAccessRouter(pool){
    if(!validLicense(u)){await client.query('ROLLBACK');return res.status(403).json({error:'Customer blocked or subscription expired'});}
    const visitor=await rememberVisitor(client,req,res,fingerprint,name,u.organization_id);
    if(visitor.status==='blocked'){await client.query('ROLLBACK');return res.status(403).json({error:'Device blocked by central administrator'});}
+   if(visitor.status==='pending'){await client.query('COMMIT');return res.status(403).json({error:'Device pending administrator approval'});}
    const keyHash=sha(fingerprint);
    const old=await client.query('SELECT id,status FROM central_client_devices WHERE organization_id=$1 AND device_key_hash=$2',[u.organization_id,keyHash]);
    let status=old.rows[0]?.status;
@@ -61,7 +65,7 @@ export function clientAccessRouter(pool){
    await client.query('COMMIT');res.json({token,organization:u.organization_name,organization_id:u.organization_id,expires_at:u.expires_at});
   }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e}finally{client.release()}
  }));
- router.post('/customer-check',limiter,respond(async(req,res)=>{
+ router.post('/customer-check',checkLimiter,respond(async(req,res)=>{
   const token=clean(req.body?.token,160),fingerprint=clean(req.body?.device_key,160);
   if(!validKey(token)||!validKey(fingerprint))return res.status(401).json({error:'Sign in required'});
   const visitor=await touchVisitor(req,res,fingerprint,clean(req.body?.device_name,160)||'Browser');
@@ -102,7 +106,7 @@ export function clientAccessRouter(pool){
    await client.query('COMMIT');res.json({organization:info.organization_name,device_status:d.status,license_status:'valid',device_id:d.id,expires_at:info.expires_at});
   }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e}finally{client.release()}
  }));
- router.post('/check',limiter,respond(async(req,res)=>{
+ router.post('/check',checkLimiter,respond(async(req,res)=>{
   const code=clean(req.body?.activation_code,200),fingerprint=clean(req.body?.device_key,160);
   if(!validKey(code)||!validKey(fingerprint))return res.status(400).json({error:'Activation code and device ID required'});
   const visitor=await touchVisitor(req,res,fingerprint,clean(req.body?.device_name,160)||'Browser');

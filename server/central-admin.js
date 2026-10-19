@@ -12,15 +12,14 @@ const allowedStatus = ['active','suspended'];
 const allowedLicenseStatus = ['active','paused','revoked'];
 
 export async function seedCentralAdmin(pool) {
+ // Existing admins are never re-seeded or changed when initial credentials are removed.
+ const {rows}=await pool.query('SELECT id FROM central_admins LIMIT 1');
+ if(rows.length) return;
  const email=clean(process.env.CENTRAL_ADMIN_EMAIL,200).toLowerCase();
  const password=process.env.CENTRAL_ADMIN_PASSWORD;
- if(!email && !password) return;
- if(!email.includes('@') || !password || password.length<16) throw Error('CENTRAL_ADMIN_EMAIL and CENTRAL_ADMIN_PASSWORD (16+ characters) required together');
- const {rows}=await pool.query('SELECT id FROM central_admins LIMIT 1');
- if(rows.length===0) {
-  await pool.query('INSERT INTO central_admins(email,password_hash,name) VALUES($1,$2,$3)',[email,hash(password),'Super Administrator']);
-  console.log('Central admin created. Remove CENTRAL_ADMIN_PASSWORD after first launch.');
- }
+ if(!email.includes('@')||!password||password.length<16) throw Error('Initial Central Admin requires email and password (16+ characters)');
+ await pool.query('INSERT INTO central_admins(email,password_hash,name) VALUES($1,$2,$3)',[email,hash(password),'Super Administrator']);
+ console.log('Central admin created. Remove CENTRAL_ADMIN_PASSWORD after first launch.');
 }
 
 export function createCentralRouter(pool) {
@@ -30,7 +29,7 @@ export function createCentralRouter(pool) {
  const audit=async(client,admin,action,type,id,detail={})=>client.query('INSERT INTO central_audit_logs(admin_id,action,target_type,target_id,detail) VALUES($1,$2,$3,$4,$5)',[admin,action,type,id,JSON.stringify(detail)]);
  const fail=(status,message)=>{const e=Error(message);e.status=status;throw e;};
  const withTransaction=async fn=>{const client=await pool.connect();try{await client.query('BEGIN');const result=await fn(client);await client.query('COMMIT');return result;}catch(error){await client.query('ROLLBACK');throw error;}finally{client.release();}};
- router.post('/login',rateLimit({windowMs:15*60*1000,limit:10,standardHeaders:'draft-7',legacyHeaders:false}),safe(async(req,res)=>{
+ router.post('/login',rateLimit({windowMs:15*60*1000,limit:30,skipSuccessfulRequests:true,standardHeaders:'draft-7',legacyHeaders:false}),safe(async(req,res)=>{
   const email=clean(req.body?.email,200).toLowerCase();const password=String(req.body?.password??'');
   const {rows}=await run('SELECT * FROM central_admins WHERE email=$1 AND active=true',[email]);
   if(!rows[0] || !verify(password,rows[0].password_hash)) return res.status(401).json({error:'Invalid credentials'});
@@ -50,14 +49,14 @@ export function createCentralRouter(pool) {
  router.get('/summary',safe(async(req,res)=>{
   const {rows}=await run(`SELECT (SELECT count(*)::int FROM client_organizations) organizations,
   (SELECT count(*)::int FROM client_organizations WHERE status='active') active_organizations,
-  (SELECT count(*)::int FROM client_licenses WHERE status='active' AND (expires_at>now() OR plan='lifetime')) valid_licenses,
+  (SELECT count(*)::int FROM client_licenses WHERE status='active' AND (starts_at<=now() AND (expires_at>now() OR plan='lifetime'))) valid_licenses,
   (SELECT count(*)::int FROM client_licenses WHERE plan<>'lifetime' AND expires_at<=now()) expired_licenses`);
   res.json(rows[0]);
  }));
  router.get('/organizations',safe(async(req,res)=>{
   const {rows}=await run(`SELECT o.*,l.id license_id,l.plan,l.status license_status,l.starts_at,l.expires_at,l.max_devices,
   CASE WHEN o.status='suspended' THEN 'suspended' WHEN l.id IS NULL THEN 'unlicensed'
-       WHEN l.status<>'active' THEN l.status WHEN l.plan<>'lifetime' AND l.expires_at<=now() THEN 'expired'
+       WHEN l.status<>'active' THEN l.status WHEN l.starts_at>now() THEN 'pending' WHEN l.plan<>'lifetime' AND l.expires_at<=now() THEN 'expired'
        ELSE 'valid' END effective_license_status
   FROM client_organizations o LEFT JOIN client_licenses l ON l.organization_id=o.id ORDER BY o.id DESC`);
   res.json(rows);
