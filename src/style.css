@@ -788,13 +788,35 @@ html:not(.dark) .app .modal [role="status"] small {
 html:not(.dark) .app .dialog .hint,
 html:not(.dark) .app .dialog .form-help { color: #58708c; }
 
-/* Rahat Rental: coordinated customer sign-in with the central admin portal. */
-.market-login{background:radial-gradient(circle at 12% 12%,#15345b 0%,transparent 36%),linear-gradient(135deg,#071325,#0e2239 62%,#071325)!important}
-.market-login-logo{letter-spacing:.045em;font-weight:900}
-.market-login-logo-mark,.market-login-card-icon{background:linear-gradient(135deg,#f5c86b,#b88430)!important;color:#101b30!important;box-shadow:0 8px 24px #c89b4b35}
-.market-login-logo-accent{color:#efc56e!important}
-.market-login-card{border:1px solid #c7a35a45!important;box-shadow:0 25px 85px #0006!important}
-.market-login-submit{background:linear-gradient(110deg,#c5943f,#f1c76f)!important;color:#0d1a2c!important;font-weight:900!important}
-.market-login-admin-link{display:block;text-align:center;color:#e6bf75;text-decoration:none;font-size:12px;font-weight:800;padding:9px 0}
-.market-login-admin-link:hover{text-decoration:underline}
-.market-login-field input:focus-visible{outline:2px solid #d7ae61;outline-offset:2px}
+/* Rental login: real estate-inspired layout, original MarketPro branding retained. */
+.estate-inspired-login{padding:25px;background:#081b2c}
+.estate-inspired-login::before{background:radial-gradient(ellipse at 12% 28%,#22647d80,transparent 51%),radial-gradient(ellipse at 88% 78%,#087a6770,transparent 55%),#071827}
+.estate-inspired-login .market-login-layout{width:min(1040px,100%);grid-template-columns:minmax(350px,1fr) minmax(0,1fr);gap:0;direction:ltr;align-items:stretch}
+.estate-inspired-login .market-login-story{direction:rtl;background:linear-gradient(155deg,#123348,#0e4b50);min-height:580px;padding:clamp(24px,4vw,46px);border-radius:0 24px 24px 0;border:1px solid #40686c;justify-content:center}
+.estate-inspired-login .market-login-card-wrap{direction:rtl;display:flex}
+.estate-inspired-login[dir=ltr] .market-login-story,.estate-inspired-login[dir=ltr] .market-login-card-wrap{direction:ltr}
+.estate-inspired-login .market-login-card{width:100%;border-radius:24px 0 0 24px;background:#fff;box-shadow:0 25px 65px #00152248;border:0;backdrop-filter:none;color:#10243b;padding:clamp(24px,3vw,38px)}
+.estate-inspired-login .market-login-card::before{display:none}
+.estate-inspired-login .market-login-card h2{color:#09263a;font-size:24px}
+.estate-inspired-login .market-login-card-intro{color:#728398}
+.estate-inspired-login .market-login-field{color:#1d3546}
+.estate-inspired-login .market-login-input-wrap{background:#f7fafc;border:1px solid #d6e2ea}
+.estate-inspired-login .market-login-input-wrap input{color:#142b3d!important}
+.estate-inspired-login .market-login-input-wrap input::placeholder{color:#93a3b5}
+.estate-inspired-login .market-login-card .styled-select,.estate-inspired-login .market-login-card select{color:#243b53;background:#f8fafc;border:1px solid #d7e3ed}
+.estate-inspired-login .market-login-card-icon{background:#e7f9f7;color:#008c85;border:1px solid #b9e7e3}
+.estate-inspired-login .market-login-tabs{display:grid;grid-template-columns:1fr 1fr;gap:5px;background:#f1f4f7;border-radius:11px;padding:5px}
+.estate-inspired-login .market-login-tabs button{border:0;border-radius:9px;background:transparent;padding:11px 7px;font-weight:750;color:#61738a;cursor:pointer}
+.estate-inspired-login .market-login-tabs button.selected{background:#fff;color:#008e83;box-shadow:0 2px 9px #123b5319}
+.estate-inspired-login .market-login-form{display:flex;flex-direction:column;gap:16px}
+.estate-inspired-login .market-login-submit{background:linear-gradient(105deg,#11c2b0,#008e7d);color:#fff;box-shadow:none}
+.estate-inspired-login .market-login-secure{color:#788b9b}
+.estate-inspired-login .market-login-visibility{color:#4c6c80}
+.estate-inspired-login .market-login-admin-link{display:block;text-align:center;color:#078c85;font-size:12px;font-weight:750;text-decoration:none;margin-top:5px}
+.estate-inspired-login .market-login-admin-link:hover{text-decoration:underline}
+.estate-inspired-login .market-login-story h1{font-size:clamp(29px,3vw,42px);line-height:1.5}
+.estate-inspired-login .market-login-story>p{color:#d2e4e9}
+.estate-inspired-login .market-login-eyebrow{margin-top:45px;color:#69e5d0}
+.estate-inspired-login .market-login-logo-mark{background:linear-gradient(130deg,#20b8a7,#087f8f)}
+.estate-inspired-login .market-login-logo-accent{color:#69e5d0}
+@media(max-width:790px){.estate-inspired-login .market-login-layout{grid-template-columns:1fr;max-width:550px}.estate-inspired-login .market-login-story{min-height:unset;padding:23px;border-radius:20px 20px 0 0}.estate-inspired-login .market-login-story h1{font-size:27px}.estate-inspired-login .market-login-eyebrow{margin-top:15px}.estate-inspired-login .market-login-card{border-radius:0 0 20px 20px}.estate-inspired-login .market-login-features{margin-top:13px}}

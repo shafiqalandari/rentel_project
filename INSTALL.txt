@@ -1,0 +1,5 @@
+Market Rental login/admin visual update. Original MarketPro/Market Rental branding preserved.
+Changed: src/LoginExperience.tsx, src/style.css, server/central-ui/style.css.
+The Create Office Account tab prepares an email request to the central administrator (not automatic registration); backend has no public signup endpoint.
+No backend, migrations, database or other project files changed.
+Copy into /var/www/rahat-rental matching paths, build with npm run build and restart only rahat-rental-api for the central admin static CSS.
