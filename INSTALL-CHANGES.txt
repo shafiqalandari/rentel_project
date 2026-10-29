@@ -1,0 +1,13 @@
+MARKET RENTAL | Changed files only
+
+1. Back up database and current files before installation.
+2. Replace only the files in this archive, preserving the same relative paths.
+3. Run npm run db:migrate using the CURRENT Market Rental DATABASE_URL.
+4. Rebuild with npm run build and restart only the Market Rental application/API service.
+5. Visit /central-admin/, open Account Requests and review registration requests.
+6. Approval creates an organization and its trial license. Set customer login credentials with central admin before the customer can sign in.
+7. Trial default is 7 days; update in admin settings. Existing customer expiry dates are not changed.
+8. Verify with a separate test organization before accepting live signups.
+9. No files for unrelated projects or databases are included.
+
+Testing: Node syntax checks performed. Real DB migration, frontend build and end-to-end login have not been confirmed here.

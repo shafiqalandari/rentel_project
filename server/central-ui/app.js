@@ -1,7 +1,7 @@
 const $=id=>document.getElementById(id);
 let token=sessionStorage.getItem('central_admin_token')||'';
 let customers=[],auditLogs=[],selected=null,activeView='overview';
-const titles={overview:'داشبورد مدیریت مرکزی',customers:'مشتریان و مارکیت‌ها',licenses:'اشتراک‌ها و لایسنس‌ها',devices:'مدیریت دستگاه‌ها',billing:'پلان‌ها و پرداخت‌ها',audit:'تاریخچه فعالیت‌ها',settings:'معلومات سیستم'};
+const titles={overview:'داشبورد مدیریت مرکزی',requests:'درخواست‌های ثبت‌نام',customers:'مشتریان و مارکیت‌ها',licenses:'اشتراک‌ها و لایسنس‌ها',devices:'مدیریت دستگاه‌ها',billing:'پلان‌ها و پرداخت‌ها',audit:'تاریخچه فعالیت‌ها',settings:'معلومات سیستم'};
 const plans={trial:'آزمایشی',monthly:'ماهانه',annual:'سالانه',custom:'تاریخ دلخواه',lifetime:'دائمی'};
 const states={approved:'تأییدشده',blocked:'بلاک‌شده',pending:'در انتظار',valid:'معتبر',active:'فعال',suspended:'تعلیق‌شده',paused:'متوقف',revoked:'لغوشده',expired:'منقضی',unlicensed:'بدون لایسنس'};
 const make=(tag,value='',cls='')=>{const n=document.createElement(tag);n.textContent=String(value??'');if(cls)n.className=cls;return n};
@@ -10,7 +10,7 @@ const formatDate=v=>v?new Date(v).toLocaleDateString('fa-AF',{year:'numeric',mon
 function notice(txt){$('notice').textContent=txt;$('notice').style.display='block';clearTimeout(notice.timer);notice.timer=setTimeout(()=>$('notice').style.display='none',4200)}
 async function api(path,options={}){const res=await fetch('/api/central'+path,{cache:'no-store',...options,headers:{'Cache-Control':'no-store','Content-Type':'application/json',...(token?{Authorization:'Bearer '+token}:{}),...options.headers}});const data=await res.json().catch(()=>({}));if(!res.ok)throw Error(data.error||`HTTP ${res.status}`);return data}
 function show(logged){$('login').hidden=logged;$('panel').hidden=!logged}
-function view(page){if(page==='settings')loadTrialSettings().catch(e=>notice(e.message));if(page==='devices')loadDevices().catch(e=>notice(e.message));if(page==='billing')loadBilling().catch(e=>notice(e.message));activeView=page;document.querySelectorAll('[data-page]').forEach(n=>n.hidden=n.dataset.page!==page);document.querySelectorAll('#nav [data-view]').forEach(n=>n.classList.toggle('active',n.dataset.view===page));$('page-title').textContent=titles[page]||'';document.querySelector('.sidebar').classList.remove('open')}
+function view(page){if(page==='requests')loadAccountRequests().catch(e=>notice(e.message));if(page==='settings')loadTrialSettings().catch(e=>notice(e.message));if(page==='devices')loadDevices().catch(e=>notice(e.message));if(page==='billing')loadBilling().catch(e=>notice(e.message));activeView=page;document.querySelectorAll('[data-page]').forEach(n=>n.hidden=n.dataset.page!==page);document.querySelectorAll('#nav [data-view]').forEach(n=>n.classList.toggle('active',n.dataset.view===page));$('page-title').textContent=titles[page]||'';document.querySelector('.sidebar').classList.remove('open')}
 function pill(value){const text=states[value]||value||'نامشخص';return make('span',text,'pill '+(['expired','revoked','paused','suspended','unlicensed'].includes(value)?'bad':''))}
 function button(text,handler,cls='ghost'){const b=make('button',text,cls);b.type='button';b.onclick=handler;return b}
 function emptyRow(count){const tr=document.createElement('tr');const td=make('td','هنوز ریکاردی ثبت نشده است.','empty');td.colSpan=count;tr.append(td);return tr}
@@ -137,3 +137,21 @@ function createPayment(){if(!customers.length||!billingPlans.some(p=>p.active))r
 function reviewPayment(pay,status){modal(status==='approved'?'تأیید دریافت پرداخت':'رد درخواست پرداخت','PAYMENT REVIEW');$('modal-content').append(make('p',status==='approved'?`آیا دریافت مبلغ ${pay.amount} ${pay.currency} تأیید شده است؟ تأیید، اشتراک را تمدید می‌کند.`:'درخواست پرداخت رد شود؟'));const a=make('div','','modal-actions');a.append(button('تأیید تصمیم',async()=>{try{await api('/payments/'+pay.id+'/review',{method:'POST',body:JSON.stringify({status})});closeModal();await loadBilling();await refresh();notice('وضعیت پرداخت ذخیره شد')}catch(e){notice(e.message)}},status==='approved'?'primary':'danger'),button('انصراف',closeModal));$('modal-content').append(a)}
 function renewalForm(){if(!customers.length||!billingPlans.some(p=>p.active))return notice('اول مشتری و پلان فعال بسازید');modal('تمدید دستی اشتراک','SUBSCRIPTION RENEWAL');const f=el('form',{class:'modal-grid'});f.append(selectCustomer(),selectPlan(),make('p','تمدید دستی بدون ثبت دریافت پول انجام می‌شود. فقط پس از تأیید مدیریتی استفاده کنید.','muted full'));const ft=formFooter('تمدید اعتبار');ft.classList.add('full');f.append(ft);f.onsubmit=async e=>{e.preventDefault();const v=Object.fromEntries(new FormData(f));try{await api('/organizations/'+v.organization_id+'/renew',{method:'POST',body:JSON.stringify({plan_id:v.plan_id})});closeModal();await loadBilling();await refresh();notice('اعتبار مشتری تمدید شد')}catch(err){notice(err.message)}};$('modal-content').append(f)}
 $('new-plan').onclick=createPlan;$('new-payment').onclick=createPayment;$('new-renewal').onclick=renewalForm;$('reload-billing').onclick=()=>loadBilling().catch(e=>notice(e.message));
+
+async function loadAccountRequests(){
+ const list=await api('/account-requests');const rows=list.map(r=>{
+  const tr=make('tr');tr.append(make('td',r.office_name),make('td',r.manager_name),make('td',(r.phone||'')+' / '+(r.email||'')));
+  const state=make('td');state.append(pill(r.status));tr.append(state,make('td',formatDate(r.created_at)));
+  const actions=make('td','','inline-actions');if(r.status==='pending'){
+   actions.append(button('تأیید و فعال‌سازی',()=>reviewAccountRequest(r,'approved'),'primary'),button('رد درخواست',()=>reviewAccountRequest(r,'rejected'),'danger'));
+  }else actions.append(make('span',r.organization_id?'مشتری #'+r.organization_id:'بررسی‌شده','muted'));
+  tr.append(actions);return tr;
+ });$('account-request-list').replaceChildren(...(rows.length?rows:[emptyRow(6)]));
+}
+function reviewAccountRequest(r,status){
+ modal(status==='approved'?'تأیید حساب و شروع دوره آزمایشی':'رد درخواست','ACCOUNT REQUEST');
+ $('modal-content').append(make('p',`درخواست ${r.office_name} به مسئولیت ${r.manager_name}، ایمیل ${r.email}`));
+ if(status==='approved')$('modal-content').append(make('p','با تأیید، یک دفتر با لایسنس آزمایشی جدید ایجاد می‌شود. برای ورود، رمز مشتری را از بخش پروفایل مشتری تنظیم کنید.'));
+ const actions=make('div','','modal-actions');actions.append(button('تأیید تصمیم',async()=>{try{await api('/account-requests/'+r.id,{method:'PATCH',body:JSON.stringify({status})});closeModal();await loadAccountRequests();await refresh();notice('درخواست بررسی شد')}catch(e){notice(e.message)}},'primary'),button('انصراف',closeModal));$('modal-content').append(actions);
+}
+$('refresh-requests').onclick=()=>loadAccountRequests().catch(e=>notice(e.message));

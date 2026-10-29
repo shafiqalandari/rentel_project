@@ -182,3 +182,9 @@ body:has(#login:not([hidden])){background:radial-gradient(circle at 18% 16%,#215
 #panel nav button.active{background:#16685f;color:#fff;box-shadow:inset -3px 0 #61e1c1}
 #panel nav button:hover{background:#1c5259;color:#fff}
 @media(max-width:800px){.login-shell{display:flex;flex-direction:column;gap:0;padding:14px;max-width:570px}.login-intro{border-radius:19px 19px 0 0;padding:20px}.login-intro h1,.login-intro p,.login-intro .login-feature{display:none}.login-shell .login-card{min-height:0;border-radius:0 0 19px 19px;padding:24px}}
+
+/* Unified accessible responsive admin styles */
+:root{color-scheme:light}button,input,select,textarea{font:inherit}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #23b5ab;outline-offset:2px}
+.sidebar nav button{transition:background .18s ease,color .18s ease,transform .18s ease}.sidebar nav button:hover{transform:translateX(-2px)}
+.table-wrap{max-width:100%;overflow-x:auto}.table-wrap table{min-width:690px}.inline-actions{display:flex;flex-wrap:wrap;gap:6px}
+@media(max-width:700px){.page-heading{flex-wrap:wrap}.page-heading h1{font-size:22px}.topbar-actions{flex-wrap:wrap}.modal-card{max-height:92dvh;overflow-y:auto}}

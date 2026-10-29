@@ -851,3 +851,13 @@ html:has(.estate-inspired-login),body:has(.estate-inspired-login),#root:has(.est
 .estate-inspired-login .market-reference-orbits span{opacity:.35}
 @media(max-width:850px){.estate-inspired-login{padding:14px!important}.estate-inspired-login .market-login-layout{grid-template-columns:minmax(0,1fr)!important;min-height:0!important;width:min(580px,100%)!important}.estate-inspired-login .market-login-story{min-height:unset!important;max-height:none;border-radius:20px 20px 0 0!important;padding:20px 24px!important}.estate-inspired-login .market-login-story h1,.estate-inspired-login .market-login-story>p,.estate-inspired-login .market-login-features,.estate-inspired-login .market-reference-orbits,.estate-inspired-login .market-login-eyebrow{display:none!important}.estate-inspired-login .market-login-card{min-height:unset!important;border-radius:0 0 20px 20px!important;padding:25px!important}.estate-inspired-login .market-login-card-wrap{display:flex!important}}
 @media(max-width:480px){.estate-inspired-login{padding:0!important}.estate-inspired-login .market-login-story{border-radius:0!important}.estate-inspired-login .market-login-card{border-radius:16px 16px 0 0!important;padding:22px 16px!important}.estate-inspired-login .market-registration-grid{grid-template-columns:minmax(0,1fr)!important}.estate-inspired-login .market-registration-grid .market-login-field{grid-column:1/-1!important}.estate-inspired-login .market-registration-grid .market-login-field:nth-child(3) .market-login-input-wrap{max-width:unset!important}}
+
+/* Registration alignment / accessible state */
+.estate-inspired-login .market-registration-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+.estate-inspired-login .market-registration-grid .market-login-field{min-width:0;width:100%;grid-column:auto}
+.estate-inspired-login .market-registration-grid .market-login-field:nth-child(3),.estate-inspired-login .market-registration-grid .market-login-field:nth-child(4){grid-column:1/-1}
+.estate-inspired-login .market-registration-grid .market-login-field:nth-child(3) .market-login-input-wrap{max-width:100%}
+.estate-inspired-login .market-login-card{height:auto;overflow:visible}
+.estate-inspired-login .market-login-input-wrap:focus-within{border-color:#009d91!important;box-shadow:0 0 0 3px rgba(0,157,145,.12)}
+.market-registration-success{padding:11px 13px;border-radius:10px;background:#e8f8f2;color:#08785e;font-size:13px;line-height:1.7}
+@media(max-width:480px){.estate-inspired-login .market-registration-grid{grid-template-columns:minmax(0,1fr)}}

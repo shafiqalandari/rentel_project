@@ -68,6 +68,29 @@ export function createCentralRouter(pool) {
   (SELECT count(*)::int FROM client_licenses WHERE plan<>'lifetime' AND expires_at<=now()) expired_licenses`);
   res.json(rows[0]);
  }));
+ router.get('/account-requests',safe(async(req,res)=>{
+  const {rows}=await run("SELECT id,office_name,manager_name,phone,email,status,organization_id,created_at,reviewed_at FROM central_account_requests ORDER BY CASE status WHEN 'pending' THEN 0 ELSE 1 END,created_at DESC LIMIT 500");
+  res.json(rows);
+ }));
+ router.patch('/account-requests/:id',safe(async(req,res)=>{
+  const id=validId(req.params.id),status=req.body?.status;
+  if(!id||!['approved','rejected'].includes(status))fail(400,'Invalid request or decision');
+  const result=await withTransaction(async c=>{
+   const found=await c.query('SELECT * FROM central_account_requests WHERE id=$1 FOR UPDATE',[id]);
+   if(!found.rowCount)fail(404,'Request not found');
+   if(found.rows[0].status!=='pending')fail(409,'Request already reviewed');
+   const request=found.rows[0];let organizationId=null;
+   if(status==='approved'){
+    const setting=await c.query("SELECT value FROM app_settings WHERE key='central_trial_settings'");
+    const configured=Number(setting.rows[0]?.value?.trial_days),days=Number.isInteger(configured)&&configured>=1&&configured<=365?configured:7;
+    const org=await c.query('INSERT INTO client_organizations(name,contact_name,email,phone,notes) VALUES($1,$2,$3,$4,$5) RETURNING id',[request.office_name,request.manager_name,request.email,request.phone,'Approved account request; customer credentials must be issued by administrator']);
+    organizationId=org.rows[0].id;
+    await c.query("INSERT INTO client_licenses(organization_id,plan,status,starts_at,expires_at,max_devices) VALUES($1,'trial','active',now(),now()+($2::int * interval '1 day'),1)",[organizationId,days]);
+   }
+   const updated=await c.query('UPDATE central_account_requests SET status=$1,organization_id=$2,reviewed_by=$3,reviewed_at=now() WHERE id=$4 RETURNING *',[status,organizationId,req.centralAdmin.id,id]);
+   await audit(c,req.centralAdmin.id,status,'account_request',id,{organization_id:organizationId});return updated.rows[0];
+  });res.json(result);
+ }));
  router.get('/organizations',safe(async(req,res)=>{
   const {rows}=await run(`SELECT o.*,l.id license_id,l.plan,l.status license_status,l.starts_at,l.expires_at,l.max_devices,
   CASE WHEN o.status='suspended' THEN 'suspended' WHEN l.id IS NULL THEN 'unlicensed'
