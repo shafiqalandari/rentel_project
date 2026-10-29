@@ -144,18 +144,29 @@ td button{font-size:11px;min-height:35px;padding:7px 12px;margin:2px;border-radi
 @media(max-width:420px){.topbar-actions .ghost{padding:7px 8px}.topbar-title strong{font-size:12px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.metric span{font-size:10px}.metric strong{font-size:22px}.page-heading h1{font-size:21px}.modal-card{padding:16px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 
-/* Estate-inspired central admin sign-in, preserving MARKET RENTAL identity and all admin features. */
-#login.login-shell{width:min(1040px,calc(100% - 36px));min-height:585px;display:grid;grid-template-columns:1fr 1fr;gap:0;margin:auto;border-radius:24px;overflow:hidden;box-shadow:0 28px 90px #020b1b66;border:1px solid #315b67}
-#login .login-intro{padding:clamp(24px,4vw,50px);background:linear-gradient(145deg,#123046,#10535a);display:flex;flex-direction:column;justify-content:center}
-#login .login-intro h1{font-size:clamp(28px,3.2vw,43px);line-height:1.6;color:white}
-#login .login-intro p{color:#d2e8ec}
-#login .login-card{background:#fff;border:0;border-radius:0;box-shadow:none;color:#163248;padding:clamp(25px,4vw,48px);align-self:stretch;justify-content:center}
-#login .login-card h2,#login .login-card b{color:#15344b}
-#login .login-card p,#login .login-card small{color:#617788}
-#login .login-card label{color:#294157}
-#login .login-card input{background:#f7fafc;color:#132b43;border:1px solid #d1e1e9}
-#login .login-card input::placeholder{color:#8c9dad}
-#login .login-card button[type=submit]{background:linear-gradient(100deg,#0ab7ab,#008c80);box-shadow:none;color:white}
-#login .login-card .brand-mark{background:linear-gradient(130deg,#13b9ab,#088f85)}
-#login .login-intro .brand-mark{background:linear-gradient(130deg,#13b9ab,#088f85)}
-@media(max-width:760px){#login.login-shell{grid-template-columns:1fr;width:calc(100% - 22px);margin:18px auto;min-height:0}#login .login-intro{padding:23px}#login .login-card{padding:25px}}
+/* Central admin: align layout, white sign-in card and restrained estate-style panel */
+:root{--panel:#fff;--border:#dfe6ef;--muted:#64748b;--blue:#0da99b;color:#12243a;background:#f6f8fb;color-scheme:light}
+body{background:#071325;color:#172b40;font-family:Vazirmatn,Tahoma,Arial,sans-serif}
+#login.login-shell{min-height:100dvh;max-width:1190px;display:grid;grid-template-columns:minmax(0,1fr) minmax(390px,.9fr);align-items:start;gap:clamp(20px,3.5vw,48px);padding:clamp(24px,3vw,36px);direction:rtl}
+#login .login-intro{grid-column:1;grid-row:1;position:relative;min-height:520px;background:linear-gradient(150deg,#123c43,#0d323a 62%,#103f46);border:1px solid #315c62;border-radius:30px;padding:clamp(26px,3vw,48px);overflow:hidden;color:#fff}
+#login .login-intro h1{font-size:clamp(27px,3vw,39px);line-height:1.6;color:white;margin-top:80px}
+#login .login-intro p{color:#c1d9dc;line-height:2}
+#login .login-intro .eyebrow,#login .login-feature{color:#62e1d2}
+#login .login-card{grid-column:2;grid-row:1;background:#fff;color:#182a40;border:1px solid #dce4ee;border-radius:27px;padding:clamp(22px,2.5vw,32px);box-shadow:0 25px 75px #0004;min-width:0}
+#login .login-card h2{color:#0a1a30;margin:25px 0 8px;font-size:26px}
+#login .login-card p,#login .security-note,#login .brand-line small{color:#64748b}
+#login .login-card label{color:#334155}
+#login .login-card input{background:#fff;color:#101d30;border:1px solid #dce4ee;border-radius:12px;min-height:47px}
+#login .login-card input:focus{outline:3px solid #11b4a321;border-color:#08ad9e}
+#login .login-card button[type=submit]{background:linear-gradient(110deg,#0eb6ae,#087f77);border-radius:12px;color:#fff;min-height:47px;font-weight:800}
+#login .brand-mark{background:#d7faf6;color:#009f97}
+#panel.app-shell{background:#f6f8fb;color:#12243a}
+#panel .sidebar{background:#10323b;color:#ecfefa;border-color:#2a4b54}
+#panel .sidebar-brand,#panel .sidebar-brand small,#panel .nav-caption{color:#c4e5e7}
+#panel .sidebar nav button{color:#e6f5f5}
+#panel .sidebar nav button.active{background:#0f8079;color:#fff}
+#panel .topbar{background:#fff;border-color:#dde6ed}
+#panel .card,#panel .metric,#panel .modal-card{background:#fff;color:#12243a;border-color:#dfe6ef}
+#panel .page-heading h1,#panel .section-head h2{color:#132d3b}
+#panel .primary{background:#0c9c91;color:#fff}
+@media(max-width:850px){#login.login-shell{grid-template-columns:1fr;gap:0;padding:12px;max-width:570px}#login .login-intro{grid-column:1;grid-row:1;min-height:unset;padding:18px 22px;border-radius:19px}#login .login-intro h1,#login .login-intro p,#login .login-feature{display:none}#login .login-card{grid-column:1;grid-row:2;border-radius:20px;margin-top:12px}}
