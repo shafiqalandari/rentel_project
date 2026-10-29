@@ -1,0 +1,15 @@
+Market Rental final patch: Login/Admin style + configurable trial expiry
+
+Changed files:
+- src/LoginExperience.tsx
+- src/style.css
+- server/central-ui/style.css
+- server/central-ui/index.html
+- server/central-ui/app.js
+- server/central-admin.js
+
+Trial settings: Central Admin -> Settings -> Trial Days. Default 7. Changing it affects NEW trial licenses only. Existing licenses remain untouched. API checks license validity on login and every customer-check (front-end every 15s and on focus). Server time, not PC clock, governs validity.
+
+SECURITY LIMITATION: Business data in this project is stored in browser localStorage and not protected by server-side authorization. This patch cannot guarantee that users cannot access existing cached data via browser developer tools or offline copies. True server-side data protection requires moving business data to organization-scoped PostgreSQL API.
+
+Installation: replace changed files only; build frontend with npm ci && npm run build; run node --check on JS files; restart only rental API after successful build. No database migrations are required because settings use existing app_settings JSONB table. Backup files before replacement. Do not change other projects.

@@ -144,29 +144,41 @@ td button{font-size:11px;min-height:35px;padding:7px 12px;margin:2px;border-radi
 @media(max-width:420px){.topbar-actions .ghost{padding:7px 8px}.topbar-title strong{font-size:12px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.metric span{font-size:10px}.metric strong{font-size:22px}.page-heading h1{font-size:21px}.modal-card{padding:16px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
 
-/* Central admin: align layout, white sign-in card and restrained estate-style panel */
-:root{--panel:#fff;--border:#dfe6ef;--muted:#64748b;--blue:#0da99b;color:#12243a;background:#f6f8fb;color-scheme:light}
-body{background:#071325;color:#172b40;font-family:Vazirmatn,Tahoma,Arial,sans-serif}
-#login.login-shell{min-height:100dvh;max-width:1190px;display:grid;grid-template-columns:minmax(0,1fr) minmax(390px,.9fr);align-items:start;gap:clamp(20px,3.5vw,48px);padding:clamp(24px,3vw,36px);direction:rtl}
-#login .login-intro{grid-column:1;grid-row:1;position:relative;min-height:520px;background:linear-gradient(150deg,#123c43,#0d323a 62%,#103f46);border:1px solid #315c62;border-radius:30px;padding:clamp(26px,3vw,48px);overflow:hidden;color:#fff}
-#login .login-intro h1{font-size:clamp(27px,3vw,39px);line-height:1.6;color:white;margin-top:80px}
-#login .login-intro p{color:#c1d9dc;line-height:2}
-#login .login-intro .eyebrow,#login .login-feature{color:#62e1d2}
-#login .login-card{grid-column:2;grid-row:1;background:#fff;color:#182a40;border:1px solid #dce4ee;border-radius:27px;padding:clamp(22px,2.5vw,32px);box-shadow:0 25px 75px #0004;min-width:0}
-#login .login-card h2{color:#0a1a30;margin:25px 0 8px;font-size:26px}
-#login .login-card p,#login .security-note,#login .brand-line small{color:#64748b}
-#login .login-card label{color:#334155}
-#login .login-card input{background:#fff;color:#101d30;border:1px solid #dce4ee;border-radius:12px;min-height:47px}
-#login .login-card input:focus{outline:3px solid #11b4a321;border-color:#08ad9e}
-#login .login-card button[type=submit]{background:linear-gradient(110deg,#0eb6ae,#087f77);border-radius:12px;color:#fff;min-height:47px;font-weight:800}
-#login .brand-mark{background:#d7faf6;color:#009f97}
-#panel.app-shell{background:#f6f8fb;color:#12243a}
-#panel .sidebar{background:#10323b;color:#ecfefa;border-color:#2a4b54}
-#panel .sidebar-brand,#panel .sidebar-brand small,#panel .nav-caption{color:#c4e5e7}
-#panel .sidebar nav button{color:#e6f5f5}
-#panel .sidebar nav button.active{background:#0f8079;color:#fff}
-#panel .topbar{background:#fff;border-color:#dde6ed}
-#panel .card,#panel .metric,#panel .modal-card{background:#fff;color:#12243a;border-color:#dfe6ef}
-#panel .page-heading h1,#panel .section-head h2{color:#132d3b}
-#panel .primary{background:#0c9c91;color:#fff}
-@media(max-width:850px){#login.login-shell{grid-template-columns:1fr;gap:0;padding:12px;max-width:570px}#login .login-intro{grid-column:1;grid-row:1;min-height:unset;padding:18px 22px;border-radius:19px}#login .login-intro h1,#login .login-intro p,#login .login-feature{display:none}#login .login-card{grid-column:1;grid-row:2;border-radius:20px;margin-top:12px}}
+/* Estate-style premium central control panel: presentation only, existing IDs and flows unchanged */
+body:has(#login:not([hidden])){background:radial-gradient(circle at 18% 16%,#215c6a55,transparent 42%),#071727;color:#172638}
+.login-shell{min-height:100dvh;max-width:1160px;grid-template-columns:minmax(0,1.03fr) minmax(0,.97fr);gap:0;direction:ltr;align-items:stretch;padding:clamp(20px,3vw,40px) 18px}
+.login-intro{position:relative;direction:rtl;isolation:isolate;overflow:hidden;background:linear-gradient(150deg,#123448,#104b49);border-radius:0 25px 25px 0;border:1px solid #38716c;padding:clamp(25px,3.2vw,48px);display:flex;flex-direction:column;justify-content:center;color:#fff}
+.login-intro:after{content:'';position:absolute;width:300px;height:300px;inset:auto -120px -140px auto;border-radius:50%;border:1px solid #ddb85b55;box-shadow:0 0 0 44px #e0ba590a,0 0 0 88px #e0ba5908;pointer-events:none}
+.login-intro h1{font-size:clamp(27px,3.3vw,41px);line-height:1.65;color:#fff;max-width:480px}
+.login-intro p{color:#c7e5e6;line-height:2;font-size:14px}.login-feature{color:#c3efe7;font-size:12px;line-height:2}
+.login-shell .login-card{direction:rtl;min-height:590px;border-radius:25px 0 0 25px;border:0;background:#fff;color:#14263d;padding:clamp(27px,3.8vw,52px);display:flex;flex-direction:column;justify-content:center;box-shadow:0 25px 75px #0003}
+.login-shell .login-card h2{color:#0b2538;font-size:26px;margin:26px 0 4px}
+.login-shell .login-card p{color:#64748b;line-height:1.8;margin-bottom:23px}
+.login-shell .login-card label{color:#23374b}.login-shell .login-card input{background:#f9fbfd;color:#102339;border:1px solid #d4e0e9;min-height:46px}
+.login-shell .login-card input:focus{border-color:#12ae9f;box-shadow:0 0 0 3px #08a99722}
+.login-shell .login-card button[type=submit]{min-height:49px;background:linear-gradient(110deg,#12bda9,#038a80);color:#fff;border:0;border-radius:11px;justify-content:center}
+.login-shell .login-card .brand-line{color:#13263d}.login-shell .login-card .brand-line small{color:#61758c}
+.login-shell .login-card .security-note{color:#758397}
+#panel.app-shell{background:#f1f5f9;color:#182d46}
+#panel .sidebar{background:linear-gradient(165deg,#102c42,#0c263b);border-color:#244558}
+#panel .main-zone{color:#182b45}
+#panel .topbar{background:#fff;border-color:#dce5ec;color:#20364b;box-shadow:0 3px 22px #14273a08}
+#panel .topbar-title strong{color:#152c43}#panel .page-content{max-width:1520px}
+#panel .card,#panel .metric{background:#fff;color:#1e3147;border:1px solid #dce5ed;box-shadow:0 8px 30px #14334b0a;border-radius:16px}
+#panel .metric span,#panel .metric small,#panel .muted,#panel .card p{color:#65798d}
+#panel .metric strong,#panel .page-heading h1,#panel .section-head h2,#panel .section-head h3{color:#173048}
+#panel .metric:before{background:#14b8a6}
+#panel .table-wrap{background:#fff;border:1px solid #dce5ed;border-radius:14px}
+#panel table th{background:#f1f6f9;color:#48667c;border-color:#e1e9ef}
+#panel table td{color:#223a4c;border-color:#e7eef3}
+#panel table tbody tr:hover{background:#effaf8}
+#panel input,#panel select,#panel textarea{background:#fff;color:#183047;border-color:#d2dfe9}
+#panel .ghost,#panel .icon-btn{background:#f0f6fa;color:#25445b;border:1px solid #d3e2ed}
+#panel .admin-chip{background:#e9f6f5;color:#13756e}
+#panel .info-strip{background:#ebf7f6;color:#17625e;border-color:#b9ded8}
+#panel .system-info div{background:#eff6fa;color:#425e76}#panel .system-info b{color:#173c54}
+#panel .modal-card{background:#fff;color:#182d46;border-color:#d3e3eb}
+#panel .modal-card label,#panel .modal-card h2{color:#233a50}
+#panel nav button.active{background:#16685f;color:#fff;box-shadow:inset -3px 0 #61e1c1}
+#panel nav button:hover{background:#1c5259;color:#fff}
+@media(max-width:800px){.login-shell{display:flex;flex-direction:column;gap:0;padding:14px;max-width:570px}.login-intro{border-radius:19px 19px 0 0;padding:20px}.login-intro h1,.login-intro p,.login-intro .login-feature{display:none}.login-shell .login-card{min-height:0;border-radius:0 0 19px 19px;padding:24px}}

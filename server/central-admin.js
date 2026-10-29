@@ -44,6 +44,21 @@ export function createCentralRouter(pool) {
   if(!rows.length)return res.status(401).json({error:'Session expired'});
   req.centralAdmin=rows[0];next();
  }));
+ // Settings apply to NEW trial accounts only; existing expiry dates remain unchanged.
+ router.get('/trial-settings',safe(async(req,res)=>{
+  const {rows}=await run("SELECT value FROM app_settings WHERE key='central_trial_settings'");
+  const raw=Number(rows[0]?.value?.trial_days);
+  res.json({trial_days:Number.isInteger(raw)&&raw>=1&&raw<=365?raw:7});
+ }));
+ router.put('/trial-settings',safe(async(req,res)=>{
+  const days=Number(req.body?.trial_days);
+  if(!Number.isInteger(days)||days<1||days>365)fail(400,'Trial days must be an integer from 1 to 365');
+  await withTransaction(async c=>{
+   await c.query("INSERT INTO app_settings(key,value) VALUES('central_trial_settings',$1::jsonb) ON CONFLICT(key) DO UPDATE SET value=excluded.value",[JSON.stringify({trial_days:days})]);
+   await audit(c,req.centralAdmin.id,'update','trial_settings',null,{trial_days:days});
+  });
+  res.json({trial_days:days});
+ }));
  router.post('/logout',safe(async(req,res)=>{const token=(req.get('authorization')||'').replace(/^Bearer /,'');await run('DELETE FROM central_sessions WHERE token_hash=$1',[digest(token)]);res.json({ok:true});}));
  router.get('/me',(req,res)=>res.json(req.centralAdmin));
  router.get('/summary',safe(async(req,res)=>{
@@ -69,7 +84,12 @@ export function createCentralRouter(pool) {
   const start=b.starts_at?new Date(b.starts_at):new Date();
   let end=b.expires_at?new Date(b.expires_at):null;
   if(Number.isNaN(start.getTime()))fail(400,'Invalid start date');
-  if(plan==='trial'&&!end)end=new Date(start.getTime()+7*24*60*60*1000);
+  if(plan==='trial'&&!end){
+   const setting=await run("SELECT value FROM app_settings WHERE key='central_trial_settings'");
+   const configured=Number(setting.rows[0]?.value?.trial_days);
+   const trialDays=Number.isInteger(configured)&&configured>=1&&configured<=365?configured:7;
+   end=new Date(start.getTime()+trialDays*24*60*60*1000);
+  }
   if(plan==='monthly'&&!end)end=new Date(start.getTime()+30*24*60*60*1000);
   if(plan==='annual'&&!end)end=new Date(start.getTime()+365*24*60*60*1000);
   if(plan!=='lifetime'&&(!end||Number.isNaN(end.getTime())||end<=start))fail(400,'Valid expiry after start required');
