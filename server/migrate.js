@@ -3,4 +3,4 @@ import { readFile } from 'node:fs/promises';
 import pg from 'pg';
 if(!process.env.DATABASE_URL) throw Error('DATABASE_URL required');
 const pool=new pg.Pool({connectionString:process.env.DATABASE_URL});
-try { for (const name of ['001_schema.sql','002_central_admin.sql','003_central_devices.sql','004_central_access.sql','005_central_billing.sql','006_customer_login.sql','007_central_hardening.sql','008_device_discovery.sql','009_account_requests.sql']) await pool.query(await readFile(new URL('../sql/'+name,import.meta.url),'utf8')); console.log('Database schema ready'); } finally {await pool.end()}
+try { for (const name of ['001_schema.sql','002_central_admin.sql','003_central_devices.sql','004_central_access.sql','005_central_billing.sql','006_customer_login.sql','007_central_hardening.sql','008_device_discovery.sql','009_account_requests.sql','010_account_request_credentials.sql']) await pool.query(await readFile(new URL('../sql/'+name,import.meta.url),'utf8')); console.log('Database schema ready'); } finally {await pool.end()}

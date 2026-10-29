@@ -36,11 +36,14 @@ export function clientAccessRouter(pool){
   res.json({ok:true,device_id:visitor.id,status:visitor.status,device_fingerprint:visitor.device_key_hint,first_seen_at:visitor.first_seen_at,last_seen_at:visitor.last_seen_at});
  }));
  router.post('/account-request',limiter,respond(async(req,res)=>{
-  const office=clean(req.body?.office_name,150),manager=clean(req.body?.manager_name,150),phone=clean(req.body?.phone,60),email=clean(req.body?.email,200).toLowerCase();
+  const office=clean(req.body?.office_name,150),manager=clean(req.body?.manager_name,150),phone=clean(req.body?.phone,60),email=clean(req.body?.email,200).toLowerCase(),password=String(req.body?.password||'');
   if(office.length<2||manager.length<2||phone.length<7||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))return res.status(400).json({error:'Please complete valid office, manager, phone and email details'});
+  if(password.length<12||password.length>256)return res.status(400).json({error:'Password must contain 12 to 256 characters'});
+  const account=await pool.query('SELECT organization_id FROM central_customer_accounts WHERE lower(email)=lower($1) LIMIT 1',[email]);
+  if(account.rowCount)return res.status(409).json({error:'This email already has an account. Please sign in.'});
   const existing=await pool.query("SELECT id FROM central_account_requests WHERE lower(email)=lower($1) AND status='pending' LIMIT 1",[email]);
   if(existing.rowCount)return res.status(409).json({error:'A pending request already exists for this email'});
-  try{await pool.query('INSERT INTO central_account_requests(office_name,manager_name,phone,email) VALUES($1,$2,$3,$4)',[office,manager,phone,email]);}
+  try{await pool.query('INSERT INTO central_account_requests(office_name,manager_name,phone,email,password_hash) VALUES($1,$2,$3,$4,$5)',[office,manager,phone,email,(()=>{const salt=randomBytes(16).toString('hex');return `${salt}:${scryptSync(password,salt,64).toString('hex')}`;})()]);}
   catch(err){if(err.code==='23505')return res.status(409).json({error:'A pending request already exists for this email'});throw err}
   res.status(201).json({ok:true,status:'pending'});
  }));

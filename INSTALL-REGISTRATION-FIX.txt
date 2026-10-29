@@ -1,0 +1,17 @@
+Market Rental - account registration fix
+
+Changes: customer supplies email/password in the public request; password stored as scrypt hash; admin approval creates customer login and 7-day (or configured) trial license. Existing requests without a password must be resubmitted or have credentials set manually. Existing customers and other databases are not modified by this code patch.
+
+IMPORTANT: apply to a backup of production first.
+1. Replace only included paths in project locally, preserving directories.
+2. npm ci && npm run build (must succeed before publishing).
+3. Commit and push to GitHub.
+4. VPS: git pull --ff-only origin main. Back up database `rahat_rental` before migration.
+5. With DATABASE_URL pointing ONLY to rahat_rental run npm run db:migrate. Migration adds a nullable password_hash field to central_account_requests, preserving prior records.
+6. npm run build; restart only rahat-rental-api; check /api/health and test registration, approval and login with a fresh test email.
+
+Admin email/password: not recoverable from uploaded ZIP; live accounts stored as salted password hashes in PostgreSQL. On VPS see CENTRAL_ADMIN_EMAIL / SEED_ADMIN_EMAIL, noting those were initial seeds and may not reflect later changes. For the live account email use SELECT email FROM central_admins; or SELECT email FROM users WHERE role='admin'. Do not disclose passwords or .env.
+
+Security caveat: approval is manual, not public automatic activation; existing license/device restrictions still apply. Do not run `npm audit fix --force` without review.
+
+Checks: node --check for changed server JS passed. Full npm install/build and end-to-end database test could not be completed in current environment.

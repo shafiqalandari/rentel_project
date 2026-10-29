@@ -85,6 +85,10 @@ export function createCentralRouter(pool) {
     const configured=Number(setting.rows[0]?.value?.trial_days),days=Number.isInteger(configured)&&configured>=1&&configured<=365?configured:7;
     const org=await c.query('INSERT INTO client_organizations(name,contact_name,email,phone,notes) VALUES($1,$2,$3,$4,$5) RETURNING id',[request.office_name,request.manager_name,request.email,request.phone,'Approved account request; customer credentials must be issued by administrator']);
     organizationId=org.rows[0].id;
+    if(!request.password_hash)fail(409,'This older request has no customer password. Ask customer to submit a new request or set credentials manually.');
+    const duplicate=await c.query('SELECT organization_id FROM central_customer_accounts WHERE lower(email)=lower($1)',[request.email]);
+    if(duplicate.rowCount)fail(409,'Customer email already registered');
+    await c.query('INSERT INTO central_customer_accounts(organization_id,email,password_hash) VALUES($1,$2,$3)',[organizationId,request.email,request.password_hash]);
     await c.query("INSERT INTO client_licenses(organization_id,plan,status,starts_at,expires_at,max_devices) VALUES($1,'trial','active',now(),now()+($2::int * interval '1 day'),1)",[organizationId,days]);
    }
    const updated=await c.query('UPDATE central_account_requests SET status=$1,organization_id=$2,reviewed_by=$3,reviewed_at=now() WHERE id=$4 RETURNING *',[status,organizationId,req.centralAdmin.id,id]);
