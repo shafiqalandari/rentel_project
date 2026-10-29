@@ -787,3 +787,14 @@ html:not(.dark) .app .modal [role="status"] small {
 }
 html:not(.dark) .app .dialog .hint,
 html:not(.dark) .app .dialog .form-help { color: #58708c; }
+
+/* Rahat Rental: coordinated customer sign-in with the central admin portal. */
+.market-login{background:radial-gradient(circle at 12% 12%,#15345b 0%,transparent 36%),linear-gradient(135deg,#071325,#0e2239 62%,#071325)!important}
+.market-login-logo{letter-spacing:.045em;font-weight:900}
+.market-login-logo-mark,.market-login-card-icon{background:linear-gradient(135deg,#f5c86b,#b88430)!important;color:#101b30!important;box-shadow:0 8px 24px #c89b4b35}
+.market-login-logo-accent{color:#efc56e!important}
+.market-login-card{border:1px solid #c7a35a45!important;box-shadow:0 25px 85px #0006!important}
+.market-login-submit{background:linear-gradient(110deg,#c5943f,#f1c76f)!important;color:#0d1a2c!important;font-weight:900!important}
+.market-login-admin-link{display:block;text-align:center;color:#e6bf75;text-decoration:none;font-size:12px;font-weight:800;padding:9px 0}
+.market-login-admin-link:hover{text-decoration:underline}
+.market-login-field input:focus-visible{outline:2px solid #d7ae61;outline-offset:2px}

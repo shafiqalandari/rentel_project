@@ -143,3 +143,20 @@ td button{font-size:11px;min-height:35px;padding:7px 12px;margin:2px;border-radi
 }
 @media(max-width:420px){.topbar-actions .ghost{padding:7px 8px}.topbar-title strong{font-size:12px}.metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.metric span{font-size:10px}.metric strong{font-size:22px}.page-heading h1{font-size:21px}.modal-card{padding:16px}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+/* Rahat Rental central administration: visual alignment with property management portal. */
+:root{--rahat-gold:#e1b966;--rahat-deep:#071325}
+.login-shell{background:radial-gradient(circle at 10% 85%,#173b61 0,transparent 42%),linear-gradient(140deg,#071325,#102d49)!important}
+.login-intro{background:transparent!important}
+.brand-mark{background:linear-gradient(130deg,#f6d18b,#bb8535)!important;color:#0b1930!important;border-radius:14px!important;font-weight:900!important}
+.login-card{border:1px solid #c9a45c69!important;box-shadow:0 30px 80px #0005!important}
+.login-card button[type=submit],button.primary{background:linear-gradient(120deg,#c08a3a,#e8be6c)!important;color:#10213b!important}
+.sidebar{border-inline-end:1px solid #b7914e32!important}
+.sidebar-brand{border-bottom:1px solid #b7914e34}
+.nav-caption,.eyebrow{color:#e7c57c!important}
+#nav button.active{border-inline-start:3px solid #d9ad5d!important;background:#e7bb6420!important;color:#ffe6b2!important}
+.card,.metric{border-color:#d1ac6438!important}
+.topbar{border-bottom-color:#b7914e33!important}
+.back-to-user{display:block;text-align:center;color:#e1bb72;text-decoration:none;font-weight:700;font-size:12px;margin-top:12px}
+.back-to-user:hover{text-decoration:underline}
+@media(max-width:700px){.login-shell{padding:15px!important}.login-card{max-width:100%!important}}

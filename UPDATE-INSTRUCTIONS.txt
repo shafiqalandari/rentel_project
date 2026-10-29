@@ -1,0 +1,24 @@
+Rahat Rental | Admin and User Login UI Update
+
+Files changed (preserve folder paths):
+- src/LoginExperience.tsx
+- src/style.css
+- server/central-ui/index.html
+- server/central-ui/style.css
+
+Changes:
+- Rahat Rental naming and coordinated gold/navy login presentation
+- Customer-login link to separate central-admin route /central-admin/
+- Central admin branding, navigation styling and return-to-user link
+- Corrected user login messaging, previously claiming all data is local
+- Improved login form autocomplete and accessibility focus style
+
+Important:
+- Does NOT replace rental business/backend functions with real-estate code.
+- Existing database, credentials, central admin API and permissions are unchanged.
+- This patch is an interface and login-navigation alignment, not full feature parity.
+- Back up target files, extract only changed files with paths inside /var/www/rahat-rental.
+- Run npm run build; confirm UI, customer login and /central-admin/ login before restarting services.
+- Central admin static files are served by existing backend; only restart rahat-rental-api if needed.
+- Do not run migrations or modify PostgreSQL.
+- Build could not be executed in this sandbox because the provided ZIP did not include installed dependencies and npm install did not complete.
